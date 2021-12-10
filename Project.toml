@@ -1,0 +1,18 @@
+name = "QuantumOptimalControl"
+uuid = "e91afccf-c93e-44fd-aa4c-3d3ef13645c0"
+authors = ["Satya Bade <bade.narayana@gmail.com>"]
+version = "0.1.0"
+
+[deps]
+CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba"
+DiffEqFlux = "aae7a2af-3d4f-5e19-a356-7da93b79d9d0"
+DifferentialEquations = "0c46a032-eb83-5123-abaf-570d42b7fbaa"
+Flux = "587475ba-b771-5e3f-ad9e-33799f191a9c"
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+MKLSparse = "0c723cd3-b8cd-5d40-b370-ba682dde9aae"
+Optim = "429524aa-4258-5aef-a3af-852621145aeb"
+OrdinaryDiffEq = "1dea7af3-3e70-54e6-95c3-0bf5283fa5ed"
+ProgressMeter = "92933f4c-e287-5a05-a399-4b506db050ca"
+QuantumOptics = "6e0679c1-51ea-5a7c-ac74-d61b76210b0c"
+QuantumOpticsBase = "4f57444f-1401-5e15-980d-4471b28d5678"
+Revise = "295af30f-e4ad-537b-8983-00126c2a3abe"
