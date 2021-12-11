@@ -72,3 +72,9 @@ function CuUnitaryTransform(trans::UnitaryTransform)
     outputs = [CuKet(k) for k in trans.outputs]
     UnitaryTransform([in=>out for (in,out) in zip(inputs, outputs)])
 end
+
+function StateTransform(trans::StateTransform)
+    input = CuKet(trans.input)
+    output = CuKet(trans.output)
+    StateTransform(input=>output)
+end

@@ -26,14 +26,30 @@ function adjoint_system!(dpsi::AbstractMatrix{Complex{T}},
 
 end
 
+function input_data(t::UnitaryTransform, n_params::Integer)
+    n_dim = length(t.inputs)
+    wf_size = length(t.inputs[1])
+    psi = hcat([elm.data for elm in t.inputs]...)
+    psi = hcat([psi, zeros(eltype(t.inputs[1].data), wf_size, n_dim*n_params)]...)
+    psi, n_dim
+end
+
+function input_data(t::StateTransform, n_params::Integer)
+    n_dim = 1
+    wf_size = length(t.input)
+    psi = hcat([t.input.data]...)
+    psi = hcat([psi, zeros(eltype(t.input.data), wf_size, n_params)]...)
+    psi, n_dim
+end
+
+output_data(t::StateTransform) = hcat([t.output.data]...)
+output_data(t::UnitaryTransform) = hcat([k.data for k in t.outputs]...)
+
 function augmented_ode_problem(prob::QOCProblem{T}) where T<:Real
     n_coeffs = length(prob.hamiltonian.operators)
     n_params = length(prob.drive.params)
-    n_dim = length(prob.transform.inputs)
-    wf_size = length(prob.transform.inputs[1])
-    psi = hcat([elm.data for elm in prob.transform.inputs]...)
-    psi = hcat([psi, zeros(Complex{T}, wf_size, n_dim*n_params)]...)
-    ODEProblem(adjoint_system!, psi, (prob.drive.t0, prob.drive.t1),
+    psi, n_dim = input_data(prob.transform, n_params)
+    ODEProblem{true}(adjoint_system!, psi, (prob.drive.t0, prob.drive.t1),
                (prob.hamiltonian, prob.drive, n_dim, n_params))
 
 end
@@ -43,14 +59,24 @@ function evaluate_gradient(cost::CostFunction, result::AbstractMatrix{Complex{T}
                            n_params::Integer) where T<:Real
 
     gradients = []
-    c = real(sum(diag(cost.distance(target, result[:, 1:n_dim]))))/n_dim
+    c = T(0)
+    for (x, y) in zip(eachcol(target), eachcol(result[:, 1:n_dim]))
+        c += real(cost.distance(x, y))
+    end
     @inbounds for i in 1:n_params
         res = @view result[:, n_dim*i+1:n_dim*(i+1)]
-        push!(gradients, -real(sum(diag(cost.distance(target, res)))))
+        _c = T(0)
+        for (x, y) in zip(eachcol(target), eachcol(res))
+            _c += -real(cost.distance(x, y))
+        end
+        push!(gradients, _c)
     end
     (gradients, c)
 
 end
+
+dimension(t::UnitaryTransform) = length(t.inputs)
+dimension(t::StateTransform) = 1
 
 function optimize(prob::QOCProblem{T}, opt; alg=DP5(), n_iter::Integer=1, kwargs...) where T<:Real
 
@@ -58,8 +84,8 @@ function optimize(prob::QOCProblem{T}, opt; alg=DP5(), n_iter::Integer=1, kwargs
     sol = Solution(prob.drive.params, T[])
     drive = prob.drive
     n_params = length(drive.params)
-    n_dim = length(prob.transform.inputs)
-    target = hcat([k.data for k in prob.transform.outputs]...)
+    target = output_data(prob.transform)
+    n_dim = dimension(prob.transform)
     constraint_gradient(θ) = gradient(ps->prob.cost.constraints(ps), θ)[1]
     p = Progress(n_iter)
     for i in 1:n_iter
@@ -71,7 +97,7 @@ function optimize(prob::QOCProblem{T}, opt; alg=DP5(), n_iter::Integer=1, kwargs
         push!(sol.trace, c)
         grads .+= constraint_gradient(drive.params)
         Flux.Optimise.update!(opt, drive.params, grads)
-        next!(p,  showvalues = [(:cost, c)])
+        next!(p, showvalues = [(:cost, c)])
         GC.gc()
     end
     sol
