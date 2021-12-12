@@ -49,8 +49,10 @@ function augmented_ode_problem(prob::QOCProblem{T}) where T<:Real
     n_coeffs = length(prob.hamiltonian.operators)
     n_params = length(prob.drive.params)
     psi, n_dim = input_data(prob.transform, n_params)
+    coeffs = prob.drive.coefficients(prob.drive.params)
+    grads = prob.drive.gradient(prob.drive.params)
     ODEProblem{true}(adjoint_system!, psi, (prob.drive.t0, prob.drive.t1),
-               (prob.hamiltonian, prob.drive, n_dim, n_params))
+               (prob.hamiltonian, (coeffs, grads), n_dim, n_params))
 
 end
 
@@ -61,7 +63,7 @@ function evaluate_gradient(cost::CostFunction, result::AbstractMatrix{Complex{T}
     gradients = []
     c = T(0)
     for (x, y) in zip(eachcol(target), eachcol(result[:, 1:n_dim]))
-        c += real(cost.distance(x, y))
+        c += real(cost.distance(x, y)/T(n_dim))
     end
     @inbounds for i in 1:n_params
         res = @view result[:, n_dim*i+1:n_dim*(i+1)]
@@ -69,7 +71,7 @@ function evaluate_gradient(cost::CostFunction, result::AbstractMatrix{Complex{T}
         for (x, y) in zip(eachcol(target), eachcol(res))
             _c += -real(cost.distance(x, y))
         end
-        push!(gradients, _c)
+        push!(gradients, _c/T(n_dim))
     end
     (gradients, c)
 
@@ -99,6 +101,38 @@ function optimize(prob::QOCProblem{T}, opt; alg=DP5(), n_iter::Integer=1, kwargs
         Flux.Optimise.update!(opt, drive.params, grads)
         next!(p, showvalues = [(:cost, c)])
         GC.gc()
+    end
+    sol
+
+end
+
+
+function optimize2(prob::QOCProblem{T}, opt; alg=DP5(), n_iter::Integer=1, kwargs...) where T<:Real
+
+    ode_prob = augmented_ode_problem(prob)
+    sol = Solution(prob.drive.params, T[])
+    drive = prob.drive
+    n_params = length(drive.params)
+    target = output_data(prob.transform)
+    n_dim = dimension(prob.transform)
+    constraint_gradient(θ) = gradient(ps->prob.cost.constraints(ps), θ)[1]
+    p = Progress(n_iter)
+    coeff = drive.coefficients(drive.params)
+    grad = drive.gradient(drive.params)
+    integrator = DiffEqBase.__init(ode_prob, alg, p=(prob.hamiltonian, (coeff, grad), n_dim, n_params),
+     save_start=false, save_everystep=false; kwargs...)
+    for i in 1:n_iter
+        coeff = drive.coefficients(drive.params)
+        grad = drive.gradient(drive.params)
+        integrator.p = (prob.hamiltonian, (coeff, grad), n_dim, n_params)
+        DiffEqBase.solve!(integrator)
+        grads, c = evaluate_gradient(prob.cost, integrator.sol.u[1], target, n_dim, n_params)
+        push!(sol.trace, c)
+        grads .+= constraint_gradient(drive.params)
+        Flux.Optimise.update!(opt, drive.params, grads)
+        next!(p, showvalues = [(:cost, c)])
+        GC.gc()
+        DiffEqBase.reinit!(integrator)
     end
     sol
 
