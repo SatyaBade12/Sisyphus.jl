@@ -12,6 +12,8 @@ using Flux
 using CUDA
 using CUDA.CUSPARSE
 using ProgressMeter:Progress, next!
+import DiffEqBase
+using DataStructures
 
 include("transforms.jl")
 include("hamiltonian.jl")
