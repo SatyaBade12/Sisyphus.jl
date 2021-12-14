@@ -11,7 +11,7 @@ using Flux: jacobian
 using Flux
 using CUDA
 using CUDA.CUSPARSE
-using ProgressMeter:Progress, next!
+using ProgressMeter: Progress, next!
 import DiffEqBase
 using DataStructures
 using NLopt: Opt
@@ -25,8 +25,18 @@ include("problem.jl")
 include("solver.jl")
 
 
-export StateTransform, UnitaryTransform, Hamiltonian, Solution,
-       CuHamiltonian, CuOperator, CuProblem, CostFunction
-export ParametricDrive, QOCProblem, coefficients, gradient, optimize
+export StateTransform,
+    UnitaryTransform,
+    Hamiltonian,
+    Solution,
+    CuHamiltonian,
+    CuOperator,
+    CuQOCProblem,
+    CostFunction,
+    ParametricDrive,
+    QOCProblem,
+    coefficients,
+    gradient,
+    optimize
 
 end

@@ -1,4 +1,4 @@
-mutable struct Hamiltonian 
+mutable struct Hamiltonian
     basis_l::Basis
     basis_r::Basis
     constOp::AbstractMatrix
@@ -7,7 +7,7 @@ mutable struct Hamiltonian
     function Hamiltonian(op::AbstractOperator)
         new(op.basis_l, op.basis_r, op.data, AbstractOperator[])
     end
-   
+
 end
 
 function Base.:+(H::Hamiltonian, op::AbstractOperator)
@@ -26,7 +26,7 @@ end
 function CuHamiltonian(H::Hamiltonian)
     CuH = Hamiltonian(SparseOperator(H.basis_l, H.basis_r, H.constOp))
     CuH.constOp = sparse(CuArray(H.constOp))
-    for i in 1:length(H.operators)
+    for i = 1:length(H.operators)
         push!(CuH.operators, sparse(CuArray(H.operators[i])))
     end
     CuH
