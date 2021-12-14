@@ -65,12 +65,14 @@ function evaluate_gradient(cost::CostFunction, result::AbstractMatrix{Complex{T}
     for (x, y) in zip(eachcol(target), eachcol(result[:, 1:n_dim]))
         c += real(cost.distance(x, y)/T(n_dim))
     end
+    #c = sum(real(diag(cost.distance(target, result[:, 1:n_dim]))))
     @inbounds for i in 1:n_params
         res = @view result[:, n_dim*i+1:n_dim*(i+1)]
         _c = T(0)
         for (x, y) in zip(eachcol(target), eachcol(res))
             _c += -real(cost.distance(x, y))
         end
+        #_c = -sum(real(diag(cost.distance(target, res))))
         push!(gradients, _c/T(n_dim))
     end
     (gradients, c)
@@ -83,19 +85,75 @@ dimension(t::StateTransform) = 1
 function optimize(prob::QOCProblem{T}, opt; alg=DP5(), n_iter::Integer=1, kwargs...) where T<:Real
 
     ode_prob = augmented_ode_problem(prob)
-    sol = Solution(prob.drive.params, T[])
-    drive = prob.drive
-    n_params = length(drive.params)
+    n_params = length(prob.drive.params)
     target = output_data(prob.transform)
     n_dim = dimension(prob.transform)
-    constraint_gradient(θ) = gradient(ps->prob.cost.constraints(ps), θ)[1]
+    flux_optimize(prob, ode_prob, opt, alg, target, n_dim, n_iter, kwargs...)
+
+end
+
+function optimize(prob::QOCProblem{T}, opt::Opt; alg=DP5(), n_iter::Integer=1, kwargs...) where T<:Real
+    
+    ode_prob = augmented_ode_problem(prob)
+    n_params = length(prob.drive.params)
+    target = output_data(prob.transform)
+    n_dim = dimension(prob.transform)
+    nlopt_optimize(prob, ode_prob, opt, alg, target, n_dim, n_iter, kwargs...)
+
+end
+
+function nlopt_optimize(qoc_prob::QOCProblem{T}, ode_prob::ODEProblem, opt, alg,
+                        target::AbstractMatrix{Complex{T}},
+                        n_dim::Integer, n_iter::Integer, kwargs...) where T<: Real
+
+    drive = qoc_prob.drive
+    H = qoc_prob.hamiltonian
+    cost = qoc_prob.cost
+    n_params = length(drive.params)
+    opt.maxeval = n_iter
+    constraint_gradient(θ) = gradient(ps->cost.constraints(ps), θ)[1]
+    sol = Solution(drive.params, T[])
+
+    function opt_function(x::Vector{T}, g::Vector{T})
+        drive.params[:] = x
+        coeff = drive.coefficients(x)
+        grad = drive.gradient(x)
+        res = DifferentialEquations.solve(ode_prob, alg, p=(H, (coeff, grad), n_dim, n_params),
+                    save_start=false, save_everystep=false; kwargs...)
+        grads, c = evaluate_gradient(cost, res.u[1], target, n_dim, n_params)
+        grads .+= constraint_gradient(x)
+        if length(g)>0
+            for i in 1:n_params
+                g[i] = grads[i]
+            end
+        end
+        push!(sol.trace, c)
+        println(c)
+        c + cost.constraints(x)
+    end
+    opt.min_objective = opt_function
+    (minf,minx,ret) = NLopt.optimize(opt, drive.params)
+    
+    sol
+end
+
+
+function flux_optimize(qoc_prob::QOCProblem{T}, ode_prob::ODEProblem, opt, alg, target::AbstractMatrix{Complex{T}},
+                       n_dim::Integer, n_iter::Integer, kwargs...) where T<: Real
+    
+    drive = qoc_prob.drive
+    H = qoc_prob.hamiltonian
+    cost = qoc_prob.cost
+    constraint_gradient(θ) = gradient(ps->cost.constraints(ps), θ)[1]
+    sol = Solution(drive.params, T[])
     p = Progress(n_iter)
+    n_params = length(drive.params)
     for i in 1:n_iter
         coeff = drive.coefficients(drive.params)
         grad = drive.gradient(drive.params)
-        res = DifferentialEquations.solve(ode_prob, alg, p=(prob.hamiltonian, (coeff, grad), n_dim, n_params),
+        res = DifferentialEquations.solve(ode_prob, alg, p=(H, (coeff, grad), n_dim, n_params),
                     save_start=false, save_everystep=false; kwargs...)
-        grads, c = evaluate_gradient(prob.cost, res.u[1], target, n_dim, n_params)
+        grads, c = evaluate_gradient(cost, res.u[1], target, n_dim, n_params)
         push!(sol.trace, c)
         grads .+= constraint_gradient(drive.params)
         Flux.Optimise.update!(opt, drive.params, grads)
@@ -105,7 +163,6 @@ function optimize(prob::QOCProblem{T}, opt; alg=DP5(), n_iter::Integer=1, kwargs
     sol
 
 end
-
 
 function optimize2(prob::QOCProblem{T}, opt; alg=DP5(), n_iter::Integer=1, kwargs...) where T<:Real
 

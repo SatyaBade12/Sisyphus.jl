@@ -14,6 +14,8 @@ using CUDA.CUSPARSE
 using ProgressMeter:Progress, next!
 import DiffEqBase
 using DataStructures
+using NLopt: Opt
+import NLopt
 
 include("transforms.jl")
 include("hamiltonian.jl")
