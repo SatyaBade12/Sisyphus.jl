@@ -144,7 +144,9 @@ function nlopt_optimize(
     sol = Solution(drive.params, T[])
 
     function opt_function(x::Vector{T}, g::Vector{T})
-        drive.params[:] = x
+        @inbounds for i = 1:n_params
+            drive.params[i] = x[i]
+        end
         coeff = drive.coefficients(x)
         grad = drive.gradient(x)
         res = DifferentialEquations.solve(
@@ -159,19 +161,18 @@ function nlopt_optimize(
         grads .+= constraint_gradient(x)
         if length(g) > 0
             for i = 1:n_params
-                g[i] = grads[i]
+                g[i] = -grads[i]
             end
         end
         push!(sol.trace, c)
         println(c)
-        c + cost.constraints(x)
+        return -c - cost.constraints(x)
     end
     opt.min_objective = opt_function
     (minf, minx, ret) = NLopt.optimize(opt, drive.params)
-
     sol
-end
 
+end
 
 function flux_optimize(
     qoc_prob::QOCProblem{T},
