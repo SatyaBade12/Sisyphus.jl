@@ -80,7 +80,7 @@ function evaluate_gradient(
         res = @view result[:, n_dim*i+1:n_dim*(i+1)]
         _c = T(0)
         for (x, y) in zip(eachcol(target), eachcol(res))
-            _c += -real(cost.distance(x, y))
+            _c -= real(cost.distance(x, y))
         end
         #_c = -sum(real(diag(cost.distance(target, res))))
         push!(gradients, _c / T(n_dim))
@@ -158,7 +158,7 @@ function nlopt_optimize(
             kwargs...,
         )
         grads, c = evaluate_gradient(cost, res.u[1], target, n_dim, n_params)
-        grads .+= constraint_gradient(x)
+        grads .-= constraint_gradient(x)
         if length(g) > 0
             for i = 1:n_params
                 g[i] = -grads[i]
@@ -170,6 +170,7 @@ function nlopt_optimize(
     end
     opt.min_objective = opt_function
     (minf, minx, ret) = NLopt.optimize(opt, drive.params)
+    drive.params[:] = minx
     sol
 
 end
@@ -205,7 +206,7 @@ function flux_optimize(
         )
         grads, c = evaluate_gradient(cost, res.u[1], target, n_dim, n_params)
         push!(sol.trace, c)
-        grads .+= constraint_gradient(drive.params)
+        grads .-= constraint_gradient(drive.params)
         Flux.Optimise.update!(opt, drive.params, grads)
         next!(p, showvalues = [(:cost, c)])
         GC.gc()

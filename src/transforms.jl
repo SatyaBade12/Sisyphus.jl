@@ -25,7 +25,7 @@ mutable struct UnitaryTransform <: Transform
     UnitaryTransform(input::Ket, output::Ket) = throw(IncompatibleBases)
 
     function UnitaryTransform(inputs::Vector{Ket{B,T}}, U::Matrix) where {B,T}
-        U * U' == one(U) || throw("Matrix is not unitary")
+        U * U' ≈ one(U) || throw("Matrix is not unitary")
         length(inputs) == size(U)[1] ||
             throw("Matrix dimensions do not correspond to the input kets$(U*U')")
         outputs = Ket{B,T}[]
