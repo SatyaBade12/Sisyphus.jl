@@ -3,20 +3,64 @@ mutable struct Solution{T<:Real}
     trace::Vector{T}
 end
 
-mutable struct AdjointSystemSolver{T<:Real}
+mutable struct AdjointSolver{T<:Real}
+    initial_params::Vector{T}
     ode_prob::ODEProblem
-
+    opt
+    alg
+    drives::Function
+    gradients::Function
+    ops::Vector{AbstractMatrix{Complex{T}}}
+    target::AbstractMatrix{Complex{T}}
+    cost::CostFunction
+    n_dim::Integer
+    n_iter::Integer
 end
 
 #init(::ProblemType, args...; kwargs...) :: SolverType
 #solve!(::SolverType) :: SolutionType
 
-function init(prob::QOCProblem, args...; kwargs...)
-
+function init(prob::QOCProblem, initial_params::Vector{T}, opt, alg, n_iter, args...; kwargs...) where {T<:Real}
+    n_coeffs = length(prob.operators)
+    n_params = length(initial_params)
+    psi, n_dim = input_data(prob.transform, n_params)
+    gradients(ps, t) = jacobian((_ps, _t) -> prob.drives(_ps, _t), ps, t)[1]
+    ode_prob = ODEProblem{true}(
+        adjoint_system!,
+        psi,
+        prob.tspan,
+        (prob.operators, (prob.drives, gradients), n_dim, initial_params),
+    )
+    target = output_data(prob.transform)
+    AdjointSolver(copy(initial_params), ode_prob, opt, alg, drives, gradients, target, prob.cost, n_dim, n_iter)
 end
 
-function solve!(::AdjointSystemSolver)
-
+function solve!(solver::AdjointSolver)
+    drives = solver.drives
+    ops = solver.operators
+    cost = solver.cost
+    constraint_gradient(θ) = gradient(ps -> cost.constraints(ps), θ)[1]
+    gradients(ps, t) = jacobian((_ps, _t) -> drives(_ps, _t), ps, t)[1]
+    sol = Solution(solver.initial_params, T[])
+    p = Progress(n_iter)
+    n_params = length(solver.initial_params)
+    for i = 1:n_iter
+        res = DifferentialEquations.solve(
+            solver.ode_prob,
+            solver.alg,
+            p = (ops, (drives, gradients), sol.params, n_dim),
+            save_start = false,
+            save_everystep = false;
+            kwargs...,
+        )
+        grads, c = evaluate_gradient(cost, res.u[1], target, n_dim, n_params)
+        push!(sol.trace, c)
+        grads .-= constraint_gradient(sol.params)
+        Flux.Optimise.update!(opt, sol.params, grads)
+        next!(p, showvalues = [(:cost, c)])
+        GC.gc()
+    end
+    sol
 end
 
 function adjoint_system!(
@@ -147,7 +191,6 @@ function optimize(
     ode_prob = augmented_ode_problem(prob, initial_params)
     target = output_data(prob.transform)
     n_dim = dimension(prob.transform)
-    #solver = init(prob, p=initial_params)
     nlopt_optimize(
         prob,
         initial_params,
@@ -181,7 +224,7 @@ function nlopt_optimize(
     opt.maxeval = n_iter
     constraint_gradient(θ) = gradient(ps -> cost.constraints(ps), θ)[1]
     gradients(ps, t) = jacobian((_ps, _t) -> drives(_ps, _t), ps, t)[1]
-    sol = Solution(initial_params, T[])
+    sol = Solution(copy(initial_params), T[])
 
     function opt_function(x::Vector{T}, g::Vector{T})
         @inbounds for i = 1:n_params
@@ -230,7 +273,7 @@ function flux_optimize(
     cost = qoc_prob.cost
     constraint_gradient(θ) = gradient(ps -> cost.constraints(ps), θ)[1]
     gradients(ps, t) = jacobian((_ps, _t) -> drives(_ps, _t), ps, t)[1]
-    sol = Solution(initial_params, T[])
+    sol = Solution(copy(initial_params), T[])
     p = Progress(n_iter)
     n_params = length(initial_params)
     for i = 1:n_iter
