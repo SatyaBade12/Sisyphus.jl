@@ -18,7 +18,7 @@ using NLopt: Opt
 import NLopt
 
 include("transforms.jl")
-include("loss.jl")
+include("cost.jl")
 include("problem.jl")
 include("solver.jl")
 
