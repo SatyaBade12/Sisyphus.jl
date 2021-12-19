@@ -3,26 +3,41 @@ mutable struct Solution{T<:Real}
     trace::Vector{T}
 end
 
+mutable struct AdjointSystemSolver{T<:Real}
+    ode_prob::ODEProblem
+
+end
+
+#init(::ProblemType, args...; kwargs...) :: SolverType
+#solve!(::SolverType) :: SolutionType
+
+function init(prob::QOCProblem, args...; kwargs...)
+
+end
+
+function solve!(::AdjointSystemSolver)
+
+end
+
 function adjoint_system!(
     dpsi::AbstractMatrix{Complex{T}},
     psi::AbstractMatrix{Complex{T}},
-    p::Tuple{Hamiltonian,Tuple{Function,Function},Integer,Integer},
+    p::Tuple{Vector{AbstractMatrix{Complex{T}}},Tuple{Function,Function},Vector{T},Integer},
     t::T,
 ) where {T<:Real}
 
-    H, (_ct, _gt), n_dim, n_params = p
-    n_ops = length(H.operators)
-    mul!(dpsi, H.constOp, psi, -T(1)im, T(0)im)
-    ct = _ct(t)
+    ops, (_ct, _gt), params, n_dim = p
+    n_ops = length(ops)
+    ct = _ct(params, t)
     @inbounds for i = 1:n_ops
-        mul!(dpsi, H.operators[i], psi, -T(1)im * T(ct[i]), T(1) + T(0)im)
+        mul!(dpsi, ops[i], psi, -T(1)im * T(ct[i]), T(i != 1) + T(0)im)
     end
-    gt = _gt(t)
+    gt = _gt(params, t)
     _psi = @view psi[:, 1:n_dim]
-    @inbounds for i = 1:n_params
+    @inbounds for i = 1:length(params)
         _dpsi = @view dpsi[:, n_dim*i+1:n_dim*(i+1)]
         @inbounds for j = 1:n_ops
-            mul!(_dpsi, H.operators[j], _psi, -T(1)im * T(gt[j, i]), T(1) + T(0)im)
+            mul!(_dpsi, ops[j], _psi, -T(1)im * T(gt[j, i]), T(1) + T(0)im)
         end
     end
 
@@ -47,17 +62,19 @@ end
 output_data(t::StateTransform) = hcat([t.output.data]...)
 output_data(t::UnitaryTransform) = hcat([k.data for k in t.outputs]...)
 
-function augmented_ode_problem(prob::QOCProblem{T}) where {T<:Real}
-    n_coeffs = length(prob.hamiltonian.operators)
-    n_params = length(prob.drive.params)
+function augmented_ode_problem(
+    prob::QOCProblem{T},
+    initial_params::Vector{T},
+) where {T<:Real}
+    n_coeffs = length(prob.operators)
+    n_params = length(initial_params)
     psi, n_dim = input_data(prob.transform, n_params)
-    coeffs = prob.drive.coefficients(prob.drive.params)
-    grads = prob.drive.gradient(prob.drive.params)
+    gradients(ps, t) = jacobian((_ps, _t) -> prob.drives(_ps, _t), ps, t)[1]
     ODEProblem{true}(
         adjoint_system!,
         psi,
-        (prob.drive.t0, prob.drive.t1),
-        (prob.hamiltonian, (coeffs, grads), n_dim, n_params),
+        prob.tspan,
+        (prob.operators, (prob.drives, gradients), n_dim, initial_params),
     )
 
 end
@@ -94,38 +111,60 @@ dimension(t::StateTransform) = 1
 
 function optimize(
     prob::QOCProblem{T},
+    initial_params::Vector{T},
     opt;
     alg = DP5(),
     n_iter::Integer = 1,
     kwargs...,
 ) where {T<:Real}
 
-    ode_prob = augmented_ode_problem(prob)
-    n_params = length(prob.drive.params)
+    ode_prob = augmented_ode_problem(prob, initial_params)
     target = output_data(prob.transform)
     n_dim = dimension(prob.transform)
-    flux_optimize(prob, ode_prob, opt, alg, target, n_dim, n_iter, kwargs...)
+    flux_optimize(
+        prob,
+        initial_params,
+        ode_prob,
+        opt,
+        alg,
+        target,
+        n_dim,
+        n_iter,
+        kwargs...,
+    )
 
 end
 
 function optimize(
     prob::QOCProblem{T},
+    initial_params::Vector{T},
     opt::Opt;
     alg = DP5(),
     n_iter::Integer = 1,
     kwargs...,
 ) where {T<:Real}
 
-    ode_prob = augmented_ode_problem(prob)
-    n_params = length(prob.drive.params)
+    ode_prob = augmented_ode_problem(prob, initial_params)
     target = output_data(prob.transform)
     n_dim = dimension(prob.transform)
-    nlopt_optimize(prob, ode_prob, opt, alg, target, n_dim, n_iter, kwargs...)
+    #solver = init(prob, p=initial_params)
+    nlopt_optimize(
+        prob,
+        initial_params,
+        ode_prob,
+        opt,
+        alg,
+        target,
+        n_dim,
+        n_iter,
+        kwargs...,
+    )
 
 end
 
 function nlopt_optimize(
     qoc_prob::QOCProblem{T},
+    initial_params::Vector{T},
     ode_prob::ODEProblem,
     opt,
     alg,
@@ -135,24 +174,23 @@ function nlopt_optimize(
     kwargs...,
 ) where {T<:Real}
 
-    drive = qoc_prob.drive
-    H = qoc_prob.hamiltonian
+    drives = qoc_prob.drives
+    ops = qoc_prob.operators
     cost = qoc_prob.cost
-    n_params = length(drive.params)
+    n_params = length(initial_params)
     opt.maxeval = n_iter
     constraint_gradient(θ) = gradient(ps -> cost.constraints(ps), θ)[1]
-    sol = Solution(drive.params, T[])
+    gradients(ps, t) = jacobian((_ps, _t) -> drives(_ps, _t), ps, t)[1]
+    sol = Solution(initial_params, T[])
 
     function opt_function(x::Vector{T}, g::Vector{T})
         @inbounds for i = 1:n_params
-            drive.params[i] = x[i]
+            sol.params[i] = x[i]
         end
-        coeff = drive.coefficients(x)
-        grad = drive.gradient(x)
         res = DifferentialEquations.solve(
             ode_prob,
             alg,
-            p = (H, (coeff, grad), n_dim, n_params),
+            p = (ops, (drives, gradients), sol.params, n_dim),
             save_start = false,
             save_everystep = false;
             kwargs...,
@@ -169,14 +207,15 @@ function nlopt_optimize(
         return -c - cost.constraints(x)
     end
     opt.min_objective = opt_function
-    (minf, minx, ret) = NLopt.optimize(opt, drive.params)
-    drive.params[:] = minx
+    (minf, minx, ret) = NLopt.optimize(opt, sol.params)
+    sol.params[:] = minx
     sol
 
 end
 
 function flux_optimize(
     qoc_prob::QOCProblem{T},
+    initial_params::Vector{T},
     ode_prob::ODEProblem,
     opt,
     alg,
@@ -186,28 +225,27 @@ function flux_optimize(
     kwargs...,
 ) where {T<:Real}
 
-    drive = qoc_prob.drive
-    H = qoc_prob.hamiltonian
+    drives = qoc_prob.drives
+    ops = qoc_prob.operators
     cost = qoc_prob.cost
     constraint_gradient(θ) = gradient(ps -> cost.constraints(ps), θ)[1]
-    sol = Solution(drive.params, T[])
+    gradients(ps, t) = jacobian((_ps, _t) -> drives(_ps, _t), ps, t)[1]
+    sol = Solution(initial_params, T[])
     p = Progress(n_iter)
-    n_params = length(drive.params)
+    n_params = length(initial_params)
     for i = 1:n_iter
-        coeff = drive.coefficients(drive.params)
-        grad = drive.gradient(drive.params)
         res = DifferentialEquations.solve(
             ode_prob,
             alg,
-            p = (H, (coeff, grad), n_dim, n_params),
+            p = (ops, (drives, gradients), sol.params, n_dim),
             save_start = false,
             save_everystep = false;
             kwargs...,
         )
         grads, c = evaluate_gradient(cost, res.u[1], target, n_dim, n_params)
         push!(sol.trace, c)
-        grads .-= constraint_gradient(drive.params)
-        Flux.Optimise.update!(opt, drive.params, grads)
+        grads .-= constraint_gradient(sol.params)
+        Flux.Optimise.update!(opt, sol.params, grads)
         next!(p, showvalues = [(:cost, c)])
         GC.gc()
     end

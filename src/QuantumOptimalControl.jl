@@ -18,25 +18,10 @@ using NLopt: Opt
 import NLopt
 
 include("transforms.jl")
-include("hamiltonian.jl")
-include("drive.jl")
 include("loss.jl")
 include("problem.jl")
 include("solver.jl")
 
-
 export StateTransform,
-    UnitaryTransform,
-    Hamiltonian,
-    Solution,
-    CuHamiltonian,
-    CuOperator,
-    CuQOCProblem,
-    CostFunction,
-    ParametricDrive,
-    QOCProblem,
-    coefficients,
-    gradient,
-    optimize
-
+    UnitaryTransform, Solution, CuQOCProblem, CostFunction, QOCProblem, optimize
 end
