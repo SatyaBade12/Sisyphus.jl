@@ -16,6 +16,7 @@ import DiffEqBase
 using DataStructures
 using NLopt: Opt
 import NLopt
+import CommonSolve: solve!, init, solve
 
 include("hamiltonian.jl")
 include("transforms.jl")
@@ -34,5 +35,8 @@ export StateTransform,
     CostFunction,
     QOCProblem,
     optimize,
-    schroedinger_dynamic
+    schroedinger_dynamic,
+    solve!, 
+    init,
+    solve
 end
