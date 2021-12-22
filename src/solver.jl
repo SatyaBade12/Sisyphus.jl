@@ -61,6 +61,7 @@ function solve!(solver::AdjointSolver{T}) where{T<:Real}
     drives = solver.drives
     cost = solver.cost
     constraint_gradient(θ) = gradient(ps -> cost.constraints(ps), θ)[1]
+    distance_gradient(x, y) = gradient((_x, _y)->cost.distance(_x, _y), x, y)[2]
     gradients(ps, t) = jacobian((_ps, _t) -> drives(_ps, _t), ps, t)[1]
     sol = Solution(solver.initial_params, T[])
     p = Progress(solver.n_iter)
@@ -74,9 +75,9 @@ function solve!(solver::AdjointSolver{T}) where{T<:Real}
             save_everystep = false;
             solver.kwargs...,
         )
-        grads, c = evaluate_gradient(cost, res.u[1], solver.target, solver.n_dim, n_params)
+        grads, c = evaluate_gradient(cost, distance_gradient, res.u[1], solver.target, solver.n_dim, n_params)
         push!(sol.trace, c)
-        grads .-= constraint_gradient(sol.params)
+        grads .+= constraint_gradient(sol.params)
         Flux.Optimise.update!(solver.opt, sol.params, grads)
         next!(p, showvalues = [(:cost, c)])
         GC.gc()
@@ -148,6 +149,7 @@ end
 
 function evaluate_gradient(
     cost::CostFunction,
+    distance_gradient::Function,
     result::AbstractMatrix{Complex{T}},
     target::AbstractMatrix{Complex{T}},
     n_dim::Integer,
@@ -164,7 +166,7 @@ function evaluate_gradient(
         res = @view result[:, n_dim*i+1:n_dim*(i+1)]
         _c = T(0)
         for (x, y) in zip(eachcol(target), eachcol(res))
-            _c -= real(cost.distance(x, y))
+            _c += real(distance_gradient(x, y)'*y)
         end
         #_c = -sum(real(diag(cost.distance(target, res))))
         push!(gradients, _c / T(n_dim))
@@ -274,44 +276,6 @@ function nlopt_optimize(
     opt.min_objective = opt_function
     (minf, minx, ret) = NLopt.optimize(opt, sol.params)
     sol.params[:] = minx
-    sol
-
-end
-
-function flux_optimize(
-    qoc_prob::QOCProblem{T},
-    initial_params::Vector{T},
-    ode_prob::ODEProblem,
-    opt,
-    alg,
-    target::AbstractMatrix{Complex{T}},
-    n_dim::Integer,
-    n_iter::Integer,
-    kwargs...,
-) where {T<:Real}
-    H = qoc_prob.hamiltonian
-    cost = qoc_prob.cost
-    constraint_gradient(θ) = gradient(ps -> cost.constraints(ps), θ)[1]
-    gradients(ps, t) = jacobian((_ps, _t) -> H.drives(_ps, _t), ps, t)[1]
-    sol = Solution(copy(initial_params), T[])
-    p = Progress(n_iter)
-    n_params = length(initial_params)
-    for i = 1:n_iter
-        res = DifferentialEquations.solve(
-            ode_prob,
-            alg,
-            p = ((H.const_op, H.operators), (H.drives, gradients), sol.params, n_dim),
-            save_start = false,
-            save_everystep = false;
-            kwargs...,
-        )
-        grads, c = evaluate_gradient(cost, res.u[1], target, n_dim, n_params)
-        push!(sol.trace, c)
-        grads .-= constraint_gradient(sol.params)
-        Flux.Optimise.update!(opt, sol.params, grads)
-        next!(p, showvalues = [(:cost, c)])
-        GC.gc()
-    end
     sol
 
 end
