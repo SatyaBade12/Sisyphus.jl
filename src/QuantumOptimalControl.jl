@@ -17,11 +17,22 @@ using DataStructures
 using NLopt: Opt
 import NLopt
 
+include("hamiltonian.jl")
 include("transforms.jl")
 include("cost.jl")
 include("problem.jl")
 include("solver.jl")
+include("evolution.jl")
 
 export StateTransform,
-    UnitaryTransform, Solution, CuQOCProblem, CostFunction, QOCProblem, optimize
+    Hamiltonian,
+    CuHamiltonian,
+    UnitaryTransform,
+    CuTransform,
+    Solution,
+    CuQOCProblem,
+    CostFunction,
+    QOCProblem,
+    optimize,
+    schroedinger_dynamic
 end

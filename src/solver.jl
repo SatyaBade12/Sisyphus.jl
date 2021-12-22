@@ -6,8 +6,8 @@ end
 mutable struct AdjointSolver{T<:Real}
     initial_params::Vector{T}
     ode_prob::ODEProblem
-    opt
-    alg
+    opt::Any
+    alg::Any
     drives::Function
     gradients::Function
     ops::Vector{AbstractMatrix{Complex{T}}}
@@ -20,7 +20,15 @@ end
 #init(::ProblemType, args...; kwargs...) :: SolverType
 #solve!(::SolverType) :: SolutionType
 
-function init(prob::QOCProblem, initial_params::Vector{T}, opt, alg, n_iter, args...; kwargs...) where {T<:Real}
+function init(
+    prob::QOCProblem,
+    initial_params::Vector{T},
+    opt,
+    alg,
+    n_iter,
+    args...;
+    kwargs...,
+) where {T<:Real}
     n_coeffs = length(prob.operators)
     n_params = length(initial_params)
     psi, n_dim = input_data(prob.transform, n_params)
@@ -32,7 +40,18 @@ function init(prob::QOCProblem, initial_params::Vector{T}, opt, alg, n_iter, arg
         (prob.operators, (prob.drives, gradients), n_dim, initial_params),
     )
     target = output_data(prob.transform)
-    AdjointSolver(copy(initial_params), ode_prob, opt, alg, drives, gradients, target, prob.cost, n_dim, n_iter)
+    AdjointSolver(
+        copy(initial_params),
+        ode_prob,
+        opt,
+        alg,
+        drives,
+        gradients,
+        target,
+        prob.cost,
+        n_dim,
+        n_iter,
+    )
 end
 
 function solve!(solver::AdjointSolver)
@@ -66,9 +85,9 @@ end
 function adjoint_system!(
     dpsi::AbstractMatrix{Complex{T}},
     psi::AbstractMatrix{Complex{T}},
-    p::Tuple{Tuple{op, Vector{op}},Tuple{Function,Function},Vector{T},Integer},
+    p::Tuple{Tuple{op,Vector{op}},Tuple{Function,Function},Vector{T},Integer},
     t::T,
-) where {T<:Real, op<:AbstractMatrix{Complex{T}}}
+) where {T<:Real,op<:AbstractMatrix{Complex{T}}}
 
     ops, (_ct, _gt), params, n_dim = p
     n_ops = length(ops[2])
@@ -111,15 +130,16 @@ function augmented_ode_problem(
     prob::QOCProblem{T},
     initial_params::Vector{T},
 ) where {T<:Real}
-    n_coeffs = length(prob.operators)
+    H = prob.hamiltonian
+    n_coeffs = length(H.operators)
     n_params = length(initial_params)
     psi, n_dim = input_data(prob.transform, n_params)
-    gradients(ps, t) = jacobian((_ps, _t) -> prob.drives(_ps, _t), ps, t)[1]
+    gradients(ps, t) = jacobian((_ps, _t) -> H.drives(_ps, _t), ps, t)[1]
     ODEProblem{true}(
         adjoint_system!,
         psi,
         prob.tspan,
-        (prob.operators, (prob.drives, gradients), n_dim, initial_params),
+        (H.const_op, H.operators, (H.drives, gradients), n_dim, initial_params),
     )
 
 end
@@ -218,13 +238,12 @@ function nlopt_optimize(
     kwargs...,
 ) where {T<:Real}
 
-    drives = qoc_prob.drives
-    ops = qoc_prob.operators
+    H = qoc_prob.hamiltonian
     cost = qoc_prob.cost
     n_params = length(initial_params)
     opt.maxeval = n_iter
     constraint_gradient(θ) = gradient(ps -> cost.constraints(ps), θ)[1]
-    gradients(ps, t) = jacobian((_ps, _t) -> drives(_ps, _t), ps, t)[1]
+    gradients(ps, t) = jacobian((_ps, _t) -> H.drives(_ps, _t), ps, t)[1]
     sol = Solution(copy(initial_params), T[])
 
     function opt_function(x::Vector{T}, g::Vector{T})
@@ -234,7 +253,7 @@ function nlopt_optimize(
         res = DifferentialEquations.solve(
             ode_prob,
             alg,
-            p = (ops, (drives, gradients), sol.params, n_dim),
+            p = ((H.const_op, H.operators), (H.drives, gradients), sol.params, n_dim),
             save_start = false,
             save_everystep = false;
             kwargs...,
@@ -268,12 +287,10 @@ function flux_optimize(
     n_iter::Integer,
     kwargs...,
 ) where {T<:Real}
-
-    drives = qoc_prob.drives
-    ops = qoc_prob.operators
+    H = qoc_prob.hamiltonian
     cost = qoc_prob.cost
     constraint_gradient(θ) = gradient(ps -> cost.constraints(ps), θ)[1]
-    gradients(ps, t) = jacobian((_ps, _t) -> drives(_ps, _t), ps, t)[1]
+    gradients(ps, t) = jacobian((_ps, _t) -> H.drives(_ps, _t), ps, t)[1]
     sol = Solution(copy(initial_params), T[])
     p = Progress(n_iter)
     n_params = length(initial_params)
@@ -281,7 +298,7 @@ function flux_optimize(
         res = DifferentialEquations.solve(
             ode_prob,
             alg,
-            p = (ops, (drives, gradients), sol.params, n_dim),
+            p = ((H.const_op, H.operators), (H.drives, gradients), sol.params, n_dim),
             save_start = false,
             save_everystep = false;
             kwargs...,
