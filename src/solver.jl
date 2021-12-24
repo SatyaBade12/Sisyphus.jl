@@ -79,7 +79,7 @@ function solve!(solver::AdjointSolver{T}) where{T<:Real}
         push!(sol.trace, c)
         grads .+= constraint_gradient(sol.params)
         Flux.Optimise.update!(solver.opt, sol.params, grads)
-        next!(p, showvalues = [(:cost, c)])
+        next!(p, showvalues = [(:distance, c), (:contraints, cost.constraints(sol.params))])
         GC.gc()
     end
     sol
