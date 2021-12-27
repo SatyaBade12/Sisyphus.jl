@@ -36,7 +36,7 @@ export StateTransform,
     QOCProblem,
     optimize,
     schroedinger_dynamic,
-    solve!, 
+    solve!,
     init,
     solve
 end
