@@ -22,8 +22,8 @@ end
 function init(prob::QOCProblem, args...; kwargs...) where {T<:Real}
 
     initial_params, opt = args
-    alg = :alg in keys(kwargs) ? kwargs[:alg] : DP5()
-    maxiters = :maxiters in keys(kwargs) ? kwargs[:maxiters] : 100
+    alg = :alg in keys(kwargs) ? kwargs[:alg] : Tsit5()
+    maxiter = :maxiter in keys(kwargs) ? kwargs[:maxiter] : 100
     const_op = prob.hamiltonian.const_op
     ops = prob.hamiltonian.operators
     drives = prob.hamiltonian.drives
@@ -50,7 +50,7 @@ function init(prob::QOCProblem, args...; kwargs...) where {T<:Real}
         target,
         prob.cost,
         n_dim,
-        maxiters,
+        maxiter,
         kwargs,
     )
 end
