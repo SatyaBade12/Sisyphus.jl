@@ -14,8 +14,6 @@ mutable struct Hamiltonian{T<:Real}
         h.basis_r = const_op.basis_r
         h.const_op = const_op.data
         h.operators = [op.data for op in ops]
-        applicable(drives, rand(real(eltype(const_op.data)), length(operators + 1))...) ?
-        nothing : throw(ArgumentError)
         h.drives = drives
         h
     end
