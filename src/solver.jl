@@ -89,7 +89,10 @@ function solve!(solver::AdjointSolver{T}) where {T<:Real}
         push!(sol.trace, c)
         grads .+= constraint_gradient(sol.params)
         Flux.Optimise.update!(solver.opt, sol.params, grads)
-        next!(p, showvalues = [(:distance, c), (:constraints, cost.constraints(sol.params))])
+        next!(
+            p,
+            showvalues = [(:distance, c), (:constraints, cost.constraints(sol.params))],
+        )
         GC.gc()
     end
     sol
@@ -168,15 +171,17 @@ function evaluate_gradient(
 
     gradients = []
     c = T(0)
-    for (x, y) in zip(eachcol(target), eachcol(result[:, 1:n_dim]))
+    final_states = @view result[:, 1:n_dim]
+    for (x, y) in zip(eachcol(target), eachcol(final_states))
         c += real(cost.distance(x, y) / T(n_dim))
     end
     #c = sum(real(diag(cost.distance(target, result[:, 1:n_dim]))))
+
     @inbounds for i = 1:n_params
         res = @view result[:, n_dim*i+1:n_dim*(i+1)]
         _c = T(0)
-        for (x, y) in zip(eachcol(target), eachcol(res))
-            _c += real(distance_gradient(x, y)' * y)
+        for (j, (x, y)) in enumerate(zip(eachcol(target), eachcol(res)))
+            _c += real(distance_gradient(x, final_states[:, j])' * y)
         end
         #_c = -sum(real(diag(cost.distance(target, res))))
         push!(gradients, _c / T(n_dim))
