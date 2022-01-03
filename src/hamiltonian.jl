@@ -35,9 +35,9 @@ mutable struct Hamiltonian{T<:Real}
 end
 
 CuHamiltonian(h::Hamiltonian) = Hamiltonian(
-    sparse(CuArray(h.const_op)),
+    CuSparseMatrixCSC(h.const_op),
     h.basis_l,
     h.basis_r,
-    [sparse(CuArray(op)) for op in h.operators],
+    [CuSparseMatrixCSC(op) for op in h.operators],
     h.drives,
 )
