@@ -35,7 +35,7 @@ function init(prob::QOCProblem, args...; kwargs...) where {T<:Real}
     initial_params, opt = args
     alg = :alg in keys(kwargs) ? kwargs[:alg] : Tsit5()
     maxiter = :maxiter in keys(kwargs) ? kwargs[:maxiter] : 100
-    save_iters = :save_iters in keys(kwargs) ? kwargs[:save_iters] : Int64[]
+    save_iters = :save_iters in keys(kwargs) ? kwargs[:save_iters] : 1:-1
     const_op = prob.hamiltonian.const_op
     ops = prob.hamiltonian.operators
     drives = prob.hamiltonian.drives
@@ -286,7 +286,7 @@ function nlopt_optimize(
     opt.maxeval = n_iter
     constraint_gradient(θ) = gradient(ps -> cost.constraints(ps), θ)[1]
     gradients(ps, t) = jacobian((_ps, _t) -> H.drives(_ps, _t), ps, t)[1]
-    sol = Solution(copy(initial_params), T[])
+    sol = Solution(copy(initial_params))
 
     function opt_function(x::Vector{T}, g::Vector{T})
         @inbounds for i = 1:n_params

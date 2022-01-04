@@ -5,9 +5,9 @@ struct QOCProblem{T<:Real}
     cost::CostFunction
 end
 
-CuQOCProblem(prob::QOCProblem) = QOCProblem(
-    CuHamiltonian(prob.hamiltonian),
-    CuTransform(prob.transform),
+cu(prob::QOCProblem) = QOCProblem(
+    cu(prob.hamiltonian),
+    cu(prob.transform),
     prob.tspan,
     prob.cost,
 )

@@ -10,6 +10,7 @@ import DifferentialEquations
 using Flux: jacobian
 using Flux
 using CUDA
+import CUDA: cu
 using CUDA.CUSPARSE
 using ProgressMeter: Progress, next!
 import DiffEqBase
@@ -28,16 +29,14 @@ include("evolution.jl")
 
 export StateTransform,
     Hamiltonian,
-    CuHamiltonian,
     UnitaryTransform,
-    CuTransform,
     Solution,
-    CuQOCProblem,
     CostFunction,
     QOCProblem,
     optimize,
     schroedinger_dynamic,
     solve!,
     init,
-    solve
+    solve,
+    cu
 end
