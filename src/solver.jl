@@ -1,6 +1,16 @@
 mutable struct Solution{T<:Real}
     params::Vector{T}
-    trace::Vector{T}
+    distance_trace::Vector{T}
+    constraints_trace::Vector{T}
+    params_trace::Vector{Vector{T}}
+    function Solution(params::Vector{T}) where {T<:Real}
+        s = new{T}()
+        s.params = params
+        s.distance_trace = T[]
+        s.constraints_trace = T[]
+        s.params_trace = T[]
+        s
+    end
 end
 
 mutable struct AdjointSolver{T<:Real}
@@ -16,6 +26,7 @@ mutable struct AdjointSolver{T<:Real}
     cost::CostFunction
     n_dim::Integer
     n_iter::Integer
+    save_iters::AbstractRange
     kwargs::Any
 end
 
@@ -24,6 +35,7 @@ function init(prob::QOCProblem, args...; kwargs...) where {T<:Real}
     initial_params, opt = args
     alg = :alg in keys(kwargs) ? kwargs[:alg] : Tsit5()
     maxiter = :maxiter in keys(kwargs) ? kwargs[:maxiter] : 100
+    save_iters = :save_iters in keys(kwargs) ? kwargs[:save_iters] : Int64[]
     const_op = prob.hamiltonian.const_op
     ops = prob.hamiltonian.operators
     drives = prob.hamiltonian.drives
@@ -51,6 +63,7 @@ function init(prob::QOCProblem, args...; kwargs...) where {T<:Real}
         prob.cost,
         n_dim,
         maxiter,
+        save_iters,
         kwargs,
     )
 end
@@ -61,7 +74,7 @@ function solve!(solver::AdjointSolver{T}) where {T<:Real}
     constraint_gradient(θ) = gradient(ps -> cost.constraints(ps), θ)[1]
     distance_gradient(x, y) = gradient((_x, _y) -> cost.distance(_x, _y), x, y)[2]
     gradients(ps, t) = jacobian((_ps, _t) -> drives(_ps, _t), ps, t)[1]
-    sol = Solution(solver.initial_params, T[])
+    sol = Solution(solver.initial_params)
     p = Progress(solver.n_iter)
     n_params = length(solver.initial_params)
     for i = 1:solver.n_iter
@@ -78,21 +91,23 @@ function solve!(solver::AdjointSolver{T}) where {T<:Real}
             save_everystep = false;
             solver.kwargs...,
         )
-        grads, c = evaluate_gradient(
-            cost,
+        distance = evaluate_distance(cost, res.u[1], solver.target, solver.n_dim)
+        constraints = cost.constraints(sol.params)
+        push!(sol.distance_trace, distance)
+        push!(sol.constraints_trace, constraints)
+        grads = evaluate_gradient(
             distance_gradient,
             res.u[1],
             solver.target,
             solver.n_dim,
             n_params,
         )
-        push!(sol.trace, c)
+        if i ∈ solver.save_iters
+            push!(sol.params_trace, copy(sol.params))
+        end
         grads .+= constraint_gradient(sol.params)
         Flux.Optimise.update!(solver.opt, sol.params, grads)
-        next!(
-            p,
-            showvalues = [(:distance, c), (:constraints, cost.constraints(sol.params))],
-        )
+        next!(p, showvalues = [(:distance, distance), (:constraints, constraints)])
         GC.gc()
     end
     sol
@@ -160,8 +175,23 @@ function augmented_ode_problem(
 
 end
 
-function evaluate_gradient(
+function evaluate_distance(
     cost::CostFunction,
+    result::AbstractMatrix{Complex{T}},
+    target::AbstractMatrix{Complex{T}},
+    n_dim::Integer,
+) where {T<:Real}
+
+    c = T(0)
+    final_states = @view result[:, 1:n_dim]
+    for (x, y) in zip(eachcol(target), eachcol(final_states))
+        c += real(cost.distance(x, y) / T(n_dim))
+    end
+    c
+
+end
+
+function evaluate_gradient(
     distance_gradient::Function,
     result::AbstractMatrix{Complex{T}},
     target::AbstractMatrix{Complex{T}},
@@ -169,24 +199,17 @@ function evaluate_gradient(
     n_params::Integer,
 ) where {T<:Real}
 
-    gradients = []
-    c = T(0)
     final_states = @view result[:, 1:n_dim]
-    for (x, y) in zip(eachcol(target), eachcol(final_states))
-        c += real(cost.distance(x, y) / T(n_dim))
-    end
-    #c = sum(real(diag(cost.distance(target, result[:, 1:n_dim]))))
-
+    gradients = []
     @inbounds for i = 1:n_params
         res = @view result[:, n_dim*i+1:n_dim*(i+1)]
         _c = T(0)
         for (j, (x, y)) in enumerate(zip(eachcol(target), eachcol(res)))
             _c += real(distance_gradient(x, final_states[:, j])' * y)
         end
-        #_c = -sum(real(diag(cost.distance(target, res))))
         push!(gradients, _c / T(n_dim))
     end
-    (gradients, c)
+    gradients
 
 end
 
