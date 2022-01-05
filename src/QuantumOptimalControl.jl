@@ -26,6 +26,7 @@ include("cost.jl")
 include("problem.jl")
 include("solver.jl")
 include("evolution.jl")
+include("vectorization.jl")
 
 export StateTransform,
     Hamiltonian,
@@ -38,5 +39,6 @@ export StateTransform,
     solve!,
     init,
     solve,
-    cu
+    cu,
+    vectorize
 end
