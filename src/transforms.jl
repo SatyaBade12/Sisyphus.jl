@@ -83,3 +83,20 @@ function cu(trans::StateTransform)
     output = CuKet(trans.output)
     StateTransform(input => output)
 end
+
+function vectorize(k::Ket)
+    basis = k.basis ⊗ k.basis
+    N = length(k.data)
+    Ket(basis, reshape(dm(k).data, N * N))
+end
+
+vectorize(trans::StateTransform) =
+    StateTransform(vectorize(trans.input) => vectorize(trans.output))
+
+function vectorize(trans::UnitaryTransform)
+    t = UnitaryTransform(trans.basis ⊗ trans.basis)
+    for (k1, k2) in zip(trans.inputs, trans.outputs)
+        t += vectorize(k1) => vectorize(k2)
+    end
+    t
+end
