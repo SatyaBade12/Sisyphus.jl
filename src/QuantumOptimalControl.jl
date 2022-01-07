@@ -1,6 +1,7 @@
 module QuantumOptimalControl
 
 import QuantumOpticsBase
+using QuantumOpticsBase: IncompatibleBases
 using QuantumOptics
 using MKLSparse
 using LinearAlgebra
