@@ -8,8 +8,8 @@ struct StateTransform <: Transform
 
     StateTransform(input::Ket{B,T}, output::Ket{B,T}) where {B,T} =
         new(input.basis, input, output)
-    StateTransform(p::Pair{Ket{B,T},Ket{B,T}}) where {B,T} = StateTransform(p[1], p[2])
-    StateTransform(input::Ket, output::Ket) = throw(IncompatibleBases)
+    StateTransform(p::Pair{<:Ket,<:Ket}) = StateTransform(p[1], p[2])
+    StateTransform(input::Ket, output::Ket) = throw(IncompatibleBases())
 
 end
 
@@ -19,15 +19,16 @@ mutable struct UnitaryTransform <: Transform
     inputs::Vector{Ket}
     outputs::Vector{Ket}
 
-    UnitaryTransform(p::Pair{Ket{B,T},Ket{B,T}}) where {B,T} = UnitaryTransform(p[1], p[2])
+    UnitaryTransform(p::Pair{<:Ket,<:Ket}) = UnitaryTransform(p[1], p[2])
     UnitaryTransform(input::Ket{B,T}, output::Ket{B,T}) where {B,T} =
         new(input.basis, [input], [output])
-    UnitaryTransform(input::Ket, output::Ket) = throw(IncompatibleBases)
+    UnitaryTransform(input::Ket, output::Ket) = throw(IncompatibleBases())
 
     function UnitaryTransform(inputs::Vector{Ket{B,T}}, U::Matrix) where {B,T}
         U * U' ≈ one(U) || throw("Matrix is not unitary")
-        length(inputs) == size(U)[1] ||
-            throw("Matrix dimensions do not correspond to the input kets$(U*U')")
+        length(inputs) == size(U)[1] || throw(
+            ArgumentError("Matrix dimensions do not correspond to the input kets$(U*U')"),
+        )
         outputs = Ket{B,T}[]
         for r in eachrow(U)
             output = 0.0 * inputs[1]
@@ -42,21 +43,16 @@ mutable struct UnitaryTransform <: Transform
         end
         tr
     end
-    function UnitaryTransform(pairs::Vector{Pair{Ket{B,T},Ket{B,T}}}) where {B,T}
-        t = UnitaryTransform(pairs[1][1].basis)
-        for p in pairs
-            t += p
-        end
-        t
-    end
-    UnitaryTransform(inputs::Vector{Ket}, U::Matrix) = throw(IncompatibleBases)
+
+    UnitaryTransform(inputs::Vector{Ket}, U::Matrix) = throw(IncompatibleBases())
     UnitaryTransform(bs::Basis) = new(bs, Vector{Ket}[], Vector{Ket}[])
 end
 
-Base.:+(a::UnitaryTransform, p::Pair{Ket,Ket}) = throw(IncompatibleBases)
+Base.:+(a::UnitaryTransform, p::Pair{<:Ket,<:Ket}) = throw(IncompatibleBases())
 
 function Base.:+(a::UnitaryTransform, p::Pair{Ket{B,T},Ket{B,T}}) where {B,T}
-    a.basis == p[1].basis || throw(IncompatibleBases)
+    a.basis == p[1].basis || throw(IncompatibleBases())
+    a.basis == p[2].basis || throw(IncompatibleBases())
     for k in a.inputs
         dagger(k) * p[1] == 0.0 ||
             @warn("The transformation is not unitary $(dagger(k)*p[1])")

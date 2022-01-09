@@ -41,6 +41,7 @@ function init(prob::QOCProblem, args...; kwargs...) where {T<:Real}
     drives = prob.hamiltonian.drives
     n_coeffs = length(ops)
     n_params = length(initial_params)
+    check_compatibility(drives, length(ops), n_params)
     psi, n_dim = input_data(prob.transform, n_params)
     gradients(ps, t) = jacobian((_ps, _t) -> drives(_ps, _t), ps, t)[1]
     ode_prob = ODEProblem{true}(
@@ -316,4 +317,11 @@ function nlopt_optimize(
     sol.params[:] = minx
     sol
 
+end
+
+
+function check_compatibility(drives::Function, n_ops::Integer, n_params::Integer)
+    if !applicable(drives, rand(n_params+1)...) || length(drives(rand(n_params+1)...)) != n_ops
+        throw(ArgumentError("invalid drive"))
+    end
 end
