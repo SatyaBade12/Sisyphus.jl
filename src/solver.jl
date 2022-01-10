@@ -321,7 +321,8 @@ end
 
 
 function check_compatibility(drives::Function, n_ops::Integer, n_params::Integer)
-    if !applicable(drives, rand(n_params), rand()) || length(drives(rand(n_params), rand())) != n_ops
+    if !applicable(drives, rand(n_params), rand()) ||
+       length(drives(rand(n_params), rand())) != n_ops
         throw(ArgumentError("invalid drive"))
     end
 end
