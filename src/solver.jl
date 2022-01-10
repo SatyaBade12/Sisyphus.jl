@@ -39,9 +39,8 @@ function init(prob::QOCProblem, args...; kwargs...) where {T<:Real}
     const_op = prob.hamiltonian.const_op
     ops = prob.hamiltonian.operators
     drives = prob.hamiltonian.drives
-    n_coeffs = length(ops)
     n_params = length(initial_params)
-    check_compatibility(drives, n_coeffs, n_params)
+    check_compatibility(drives, length(ops), n_params)
     psi, n_dim = input_data(prob.transform, n_params)
     gradients(ps, t) = jacobian((_ps, _t) -> drives(_ps, _t), ps, t)[1]
     ode_prob = ODEProblem{true}(
@@ -75,44 +74,16 @@ function solve!(solver::AdjointSolver{T}) where {T<:Real}
     constraint_gradient(θ) =
         cost.constraints == nothing ? T(0) : gradient(ps -> cost.constraints(ps), θ)[1]
     distance_gradient(x, y) = gradient((_x, _y) -> cost.distance(_x, _y), x, y)[2]
-    gradients(ps, t) = jacobian((_ps, _t) -> drives(_ps, _t), ps, t)[1]
+    drives_gradients(ps, t) = jacobian((_ps, _t) -> drives(_ps, _t), ps, t)[1]
     sol = Solution(solver.initial_params)
-    p = Progress(solver.n_iter)
-    n_params = length(solver.initial_params)
-    for i = 1:solver.n_iter
-        res = DifferentialEquations.solve(
-            solver.ode_prob,
-            solver.alg,
-            p = (
-                (solver.const_op, solver.ops),
-                (drives, gradients),
-                sol.params,
-                solver.n_dim,
-            ),
-            save_start = false,
-            save_everystep = false;
-            solver.kwargs...,
-        )
-        distance = evaluate_distance(cost, res.u[1], solver.target, solver.n_dim)
-        constraints = cost.constraints == nothing ? T(0) : cost.constraints(sol.params)
-        push!(sol.distance_trace, distance)
-        push!(sol.constraints_trace, constraints)
-        grads = evaluate_gradient(
-            distance_gradient,
-            res.u[1],
-            solver.target,
-            solver.n_dim,
-            n_params,
-        )
-        if i ∈ solver.save_iters
-            push!(sol.params_trace, copy(sol.params))
-        end
-        grads .+= constraint_gradient(sol.params)
-        Flux.Optimise.update!(solver.opt, sol.params, grads)
-        next!(p, showvalues = [(:distance, distance), (:constraints, constraints)])
-        GC.gc()
-    end
-    sol
+    optimize!(
+        sol,
+        solver.opt,
+        solver,
+        drives_gradients,
+        constraint_gradient,
+        distance_gradient,
+    )
 end
 
 function adjoint_system!(
@@ -218,100 +189,107 @@ end
 dimension(t::UnitaryTransform) = length(t.inputs)
 dimension(t::StateTransform) = 1
 
-function optimize(
-    prob::QOCProblem{T},
-    initial_params::Vector{T},
-    opt;
-    alg = DP5(),
-    n_iter::Integer = 1,
-    kwargs...,
+function optimize!(
+    sol::Solution{T},
+    opt, #flux optimizer
+    solver::AdjointSolver{T},
+    drives_gradients::Function,
+    constraint_gradient::Function,
+    distance_gradient::Function,
 ) where {T<:Real}
 
-    ode_prob = augmented_ode_problem(prob, initial_params)
-    target = output_data(prob.transform)
-    n_dim = dimension(prob.transform)
-    flux_optimize(
-        prob,
-        initial_params,
-        ode_prob,
-        opt,
-        alg,
-        target,
-        n_dim,
-        n_iter,
-        kwargs...,
-    )
+    p = Progress(solver.n_iter)
+    n_params = length(solver.initial_params)
+    for i = 1:solver.n_iter
+        res = solve(
+            solver.ode_prob,
+            solver.alg,
+            p = (
+                (solver.const_op, solver.ops),
+                (solver.drives, drives_gradients),
+                sol.params,
+                solver.n_dim,
+            ),
+            save_start = false,
+            save_everystep = false;
+            solver.kwargs...,
+        )
+        distance = evaluate_distance(solver.cost, res.u[1], solver.target, solver.n_dim)
+        constraints =
+            solver.cost.constraints == nothing ? T(0) : solver.cost.constraints(sol.params)
+        push!(sol.distance_trace, distance)
+        push!(sol.constraints_trace, constraints)
+        grads = evaluate_gradient(
+            distance_gradient,
+            res.u[1],
+            solver.target,
+            solver.n_dim,
+            n_params,
+        )
+        if i ∈ solver.save_iters
+            push!(sol.params_trace, copy(sol.params))
+        end
+        grads .+= constraint_gradient(sol.params)
+        Flux.Optimise.update!(opt, sol.params, grads)
+        next!(p, showvalues = [(:distance, distance), (:constraints, constraints)])
+        GC.gc()
+    end
+    sol
 
 end
 
-function optimize(
-    prob::QOCProblem{T},
-    initial_params::Vector{T},
-    opt::Opt;
-    alg = DP5(),
-    n_iter::Integer = 1,
-    kwargs...,
+function optimize!(
+    sol::Solution{T},
+    opt::Opt, #NLopt optimizer
+    solver::AdjointSolver{T},
+    drives_gradients::Function,
+    constraint_gradient::Function,
+    distance_gradient::Function,
 ) where {T<:Real}
 
-    ode_prob = augmented_ode_problem(prob, initial_params)
-    target = output_data(prob.transform)
-    n_dim = dimension(prob.transform)
-    nlopt_optimize(
-        prob,
-        initial_params,
-        ode_prob,
-        opt,
-        alg,
-        target,
-        n_dim,
-        n_iter,
-        kwargs...,
-    )
-
-end
-
-function nlopt_optimize(
-    qoc_prob::QOCProblem{T},
-    initial_params::Vector{T},
-    ode_prob::ODEProblem,
-    opt,
-    alg,
-    target::AbstractMatrix{Complex{T}},
-    n_dim::Integer,
-    n_iter::Integer,
-    kwargs...,
-) where {T<:Real}
-
-    H = qoc_prob.hamiltonian
-    cost = qoc_prob.cost
-    n_params = length(initial_params)
-    opt.maxeval = n_iter
-    constraint_gradient(θ) = gradient(ps -> cost.constraints(ps), θ)[1]
-    gradients(ps, t) = jacobian((_ps, _t) -> H.drives(_ps, _t), ps, t)[1]
-    sol = Solution(copy(initial_params))
+    p = Progress(solver.n_iter)
+    n_params = length(solver.initial_params)
+    opt.maxeval = solver.n_iter
 
     function opt_function(x::Vector{T}, g::Vector{T})
         @inbounds for i = 1:n_params
             sol.params[i] = x[i]
         end
-        res = DifferentialEquations.solve(
-            ode_prob,
-            alg,
-            p = ((H.const_op, H.operators), (H.drives, gradients), sol.params, n_dim),
+
+        res = solve(
+            solver.ode_prob,
+            solver.alg,
+            p = (
+                (solver.const_op, solver.ops),
+                (solver.drives, drives_gradients),
+                sol.params,
+                solver.n_dim,
+            ),
             save_start = false,
             save_everystep = false;
-            kwargs...,
+            solver.kwargs...,
         )
-        grads, c = evaluate_gradient(cost, res.u[1], target, n_dim, n_params)
-        grads .-= constraint_gradient(x)
+
+        distance = evaluate_distance(solver.cost, res.u[1], solver.target, solver.n_dim)
+        constraints =
+            solver.cost.constraints == nothing ? T(0) : solver.cost.constraints(sol.params)
+        grads = evaluate_gradient(
+            distance_gradient,
+            res.u[1],
+            solver.target,
+            solver.n_dim,
+            n_params,
+        )
+        grads .+= constraint_gradient(sol.params)
         if length(g) > 0
             for i = 1:n_params
-                g[i] = -grads[i]
+                g[i] = grads[i]
             end
         end
-        push!(sol.trace, c)
-        println(c)
-        return -c - cost.constraints(x)
+        push!(sol.distance_trace, distance)
+        next!(p, showvalues = [(:distance, distance), (:constraints, constraints)])
+        GC.gc()
+        return distance + constraints
     end
     opt.min_objective = opt_function
     (minf, minx, ret) = NLopt.optimize(opt, sol.params)
