@@ -20,7 +20,6 @@ using NLopt: Opt
 import NLopt
 import CommonSolve: solve!, init, solve
 
-include("gradient.jl")
 include("hamiltonian.jl")
 include("transforms.jl")
 include("cost.jl")
