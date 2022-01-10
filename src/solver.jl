@@ -72,7 +72,8 @@ end
 function solve!(solver::AdjointSolver{T}) where {T<:Real}
     drives = solver.drives
     cost = solver.cost
-    constraint_gradient(θ) = gradient(ps -> cost.constraints(ps), θ)[1]
+    constraint_gradient(θ) =
+        cost.constraints == nothing ? T(0) : gradient(ps -> cost.constraints(ps), θ)[1]
     distance_gradient(x, y) = gradient((_x, _y) -> cost.distance(_x, _y), x, y)[2]
     gradients(ps, t) = jacobian((_ps, _t) -> drives(_ps, _t), ps, t)[1]
     sol = Solution(solver.initial_params)
@@ -93,7 +94,7 @@ function solve!(solver::AdjointSolver{T}) where {T<:Real}
             solver.kwargs...,
         )
         distance = evaluate_distance(cost, res.u[1], solver.target, solver.n_dim)
-        constraints = cost.constraints(sol.params)
+        constraints = cost.constraints == nothing ? T(0) : cost.constraints(sol.params)
         push!(sol.distance_trace, distance)
         push!(sol.constraints_trace, constraints)
         grads = evaluate_gradient(
