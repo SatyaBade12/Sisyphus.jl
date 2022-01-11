@@ -41,3 +41,11 @@ cu(h::Hamiltonian) = Hamiltonian(
     [CuSparseMatrixCSC(op) for op in h.operators],
     h.drives,
 )
+
+Base.convert(::Type{Float32}, h::Hamiltonian) = Hamiltonian(
+    SparseMatrixCSC{ComplexF32,Int64}(h.const_op),
+    h.basis_l,
+    h.basis_r,
+    [SparseMatrixCSC{ComplexF32,Int64}(op) for op in h.operators],
+    h.drives,
+)

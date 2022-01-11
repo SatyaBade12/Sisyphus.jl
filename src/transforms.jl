@@ -97,3 +97,16 @@ function vectorize(trans::UnitaryTransform)
     end
     t
 end
+
+Base.convert(::Type{ComplexF32}, k::Ket) = Ket(k.basis, Vector{ComplexF32}(k.data))
+
+Base.convert(::Type{ComplexF32}, trans::StateTransform) =
+    StateTransform(convert(ComplexF32, trans.input) => convert(ComplexF32, trans.output))
+
+function Base.convert(::Type{ComplexF32}, trans::UnitaryTransform)
+    trans_F32 = UnitaryTransform(trans.basis)
+    for (in, out) in zip(trans.inputs, trans.outputs)
+        trans_F32 += convert(ComplexF32, in) => convert(ComplexF32, out)
+    end
+    trans_F32
+end
