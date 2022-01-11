@@ -42,6 +42,7 @@ function init(prob::QOCProblem, args...; kwargs...) where {T<:Real}
     n_params = length(initial_params)
     check_compatibility(drives, length(ops), n_params)
     psi, n_dim = input_data(prob.transform, n_params)
+    check_compatibility(prob.cost, n_dim, n_params)
     gradients(ps, t) = jacobian((_ps, _t) -> drives(_ps, _t), ps, t)[1]
     ode_prob = ODEProblem{true}(
         adjoint_system!,
@@ -247,6 +248,10 @@ function optimize!(
     distance_gradient::Function,
 ) where {T<:Real}
 
+    if string(opt.algorithm)[2] != 'D'
+        @warn "$(opt.algorithm) does not use the computed gradient"
+    end
+
     p = Progress(solver.n_iter)
     n_params = length(solver.initial_params)
     opt.maxeval = solver.n_iter
@@ -287,6 +292,7 @@ function optimize!(
             end
         end
         push!(sol.distance_trace, distance)
+        push!(sol.constraints_trace, constraints)
         next!(p, showvalues = [(:distance, distance), (:constraints, constraints)])
         GC.gc()
         return distance + constraints
@@ -298,10 +304,26 @@ function optimize!(
 
 end
 
-
 function check_compatibility(drives::Function, n_ops::Integer, n_params::Integer)
     if !applicable(drives, rand(n_params), rand()) ||
        length(drives(rand(n_params), rand())) != n_ops
         throw(ArgumentError("invalid drive"))
+    end
+end
+
+function check_compatibility(cost::CostFunction, n_dim::Integer, n_params::Integer)
+    if cost.constraints != nothing
+        if !applicable(cost.constraints, rand(n_params))
+            throw(ArgumentError("invalid constraints in the cost function"))
+        end
+        if !isreal(cost.constraints(rand(n_params)))
+            throw(ArgumentError("constraints must be a real valued function"))
+        end
+    end
+    if !applicable(cost.distance, rand(n_dim), rand(n_dim))
+        throw(ArgumentError("invalid distance in the cost function"))
+    end
+    if !isreal(cost.distance(rand(n_dim), rand(n_dim)))
+        throw(ArgumentError("distance must be a real valued function"))
     end
 end
