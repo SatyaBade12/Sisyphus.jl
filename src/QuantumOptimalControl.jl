@@ -6,9 +6,7 @@ using QuantumOptics
 using SparseArrays
 using MKLSparse
 using LinearAlgebra
-using DifferentialEquations: DP5, Tsit5, solve, Vern7
-using OrdinaryDiffEq: ODEProblem
-import DifferentialEquations
+using OrdinaryDiffEq
 using Flux: jacobian
 using Flux
 using CUDA
