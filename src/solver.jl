@@ -305,9 +305,36 @@ function optimize!(
 end
 
 function check_compatibility(drives::Function, n_ops::Integer, n_params::Integer)
-    if !applicable(drives, rand(n_params), rand()) ||
-       length(drives(rand(n_params), rand())) != n_ops
-        throw(ArgumentError("invalid drive"))
+    if !applicable(drives, rand(n_params), rand())
+        throw(ArgumentError("drives should be of the form: f(params, t)"))
+    end
+    if length(drives(rand(n_params), rand())) != n_ops
+        throw(
+            ArgumentError(
+                "drives must return a vector of length equal to the number of operators",
+            ),
+        )
+    end
+end
+
+function check_compatibility(cost::CostFunction, n_dim::Integer, n_params::Integer)
+    if cost.constraints != nothing
+        if !applicable(cost.constraints, rand(n_params))
+            throw(
+                ArgumentError(
+                    "constraints in the cost function should be of the form: f(params)",
+                ),
+            )
+        end
+        if !isreal(cost.constraints(rand(n_params)))
+            throw(ArgumentError("constraints function must return real value"))
+        end
+    end
+    if !applicable(cost.distance, rand(ComplexF64, n_dim), rand(ComplexF64, n_dim))
+        throw(ArgumentError("invalid distance in the cost function"))
+    end
+    if !isreal(cost.distance(rand(ComplexF64, n_dim), rand(ComplexF64, n_dim)))
+        throw(ArgumentError("distance function must return a real value"))
     end
 end
 
