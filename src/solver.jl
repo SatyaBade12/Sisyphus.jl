@@ -337,20 +337,3 @@ function check_compatibility(cost::CostFunction, n_dim::Integer, n_params::Integ
         throw(ArgumentError("distance function must return a real value"))
     end
 end
-
-function check_compatibility(cost::CostFunction, n_dim::Integer, n_params::Integer)
-    if cost.constraints != nothing
-        if !applicable(cost.constraints, rand(n_params))
-            throw(ArgumentError("invalid constraints in the cost function"))
-        end
-        if !isreal(cost.constraints(rand(n_params)))
-            throw(ArgumentError("constraints must be a real valued function"))
-        end
-    end
-    if !applicable(cost.distance, rand(n_dim), rand(n_dim))
-        throw(ArgumentError("invalid distance in the cost function"))
-    end
-    if !isreal(cost.distance(rand(n_dim), rand(n_dim)))
-        throw(ArgumentError("distance must be a real valued function"))
-    end
-end
