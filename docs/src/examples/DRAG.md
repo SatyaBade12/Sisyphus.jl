@@ -6,7 +6,7 @@ Let's consider the following Hamiltonian of a three level system that approximat
 
 $$H(t) = \Delta|2\rangle\langle2| + \frac{\Omega_x(t)}{2}\sum_{j = 1}^{2}\sigma^x_{j, j-1} + \frac{\Omega_y(t)}{2}\sum_{j = 1}^{2}\sigma^y_{j, j-1},$$
 
-where operators $\sigma^x_{j, j-1} = \sqrt{j}(|j\rangle\langle j-1| + |j-1\rangle\langle j|)$ couple adjacent energy levels.
+where operators $\sigma^x_{j, j-1} = \sqrt{j}(|j\rangle\langle j-1| + |j-1\rangle\langle j|)$ and $\sigma^y_{j, j-1} = i\sqrt{j}(|j\rangle\langle j-1| - |j-1\rangle\langle j|)$ couple adjacent energy levels.
 
 
 ```julia
