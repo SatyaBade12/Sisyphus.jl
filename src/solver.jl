@@ -1,3 +1,8 @@
+"""
+    Solution(params)
+
+Contains the parameter and cost function traces after the optimization procedure.
+"""
 mutable struct Solution{T<:Real}
     params::Vector{T}
     distance_trace::Vector{T}
@@ -30,6 +35,13 @@ mutable struct AdjointSolver{T<:Real}
     kwargs::Any
 end
 
+"""
+    init(prob, args; kwargs)
+
+Initializes the [`QOCProblem`](@ref) by providing the
+arguments for the choice of the optimizer and differential
+equations solver.
+"""
 function init(prob::QOCProblem, args...; kwargs...) where {T<:Real}
 
     initial_params, opt = args

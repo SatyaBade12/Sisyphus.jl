@@ -57,7 +57,9 @@ T = 4.0
 Ωy(A, β, t) = -2 * (β / Δ) * A * (t - T / 2) * exp(-(t - T / 2)^2 / (2σ^2))
 
 coeffs(p, t) = [Ωx(p[1], t) / 2, Ωy(p[1], p[2], t) / 2]
-θ = [0.0, 0.0]; # initial parameters
+
+# initial parameters
+θ = [0.0, 0.0]
 ```
 
 Next, we define a cost function to be the infidelity between current and target states.

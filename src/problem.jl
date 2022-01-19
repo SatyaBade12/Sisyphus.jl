@@ -1,3 +1,8 @@
+"""
+    QOCProblem(hamiltonian, transform, tspan, cost)
+
+Defines a quantum optimal control problem to be solved.
+"""
 struct QOCProblem{T<:Real}
     hamiltonian::Hamiltonian{T}
     transform::Transform
@@ -5,6 +10,12 @@ struct QOCProblem{T<:Real}
     cost::CostFunction
 end
 
+"""
+    cu(prob)
+
+Turns a quantum optimal control problem into a form
+suitable for running on GPU.
+"""
 cu(prob::QOCProblem) =
     QOCProblem(cu(prob.hamiltonian), cu(prob.transform), prob.tspan, prob.cost)
 

@@ -1,3 +1,10 @@
+"""
+    vectorize(H, J, rates)
+
+Vectorizes the Hamiltonian and jump operators so that
+they can be submitted to the Schroedinger time evolution solver.
+Uses the vectorization identity ``\\text{vec}(ABC) = (C^T \\otimes A)\\text{vec}(B)``.
+"""
 function vectorize(
     H::Hamiltonian,
     J::Vector{<:AbstractOperator},

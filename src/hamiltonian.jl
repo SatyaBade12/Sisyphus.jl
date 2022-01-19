@@ -1,3 +1,8 @@
+"""
+    Hamiltonian(const_op, ops, drives)
+
+Contains the information about the time-dependent Hamiltonian.
+"""
 mutable struct Hamiltonian{T<:Real}
     const_op::AbstractMatrix{Complex{T}}
     basis_l::Basis
@@ -34,6 +39,11 @@ mutable struct Hamiltonian{T<:Real}
     end
 end
 
+"""
+    cu(h)
+
+Converts the Hamiltonian into a sparse form suitable for running on GPU.
+"""
 cu(h::Hamiltonian) = Hamiltonian(
     CuSparseMatrixCSC(h.const_op),
     h.basis_l,

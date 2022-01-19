@@ -1,3 +1,9 @@
+"""
+    schroedinger_dynamic(tspan, psi, h, params; kwargs)
+
+Wraps `schroedinger_dynamic` from QuantumOptics by accepting
+our custom  [`Hamiltonian`](@ref) structure.
+"""
 function schroedinger_dynamic(
     tspan,
     psi::Ket,
@@ -16,6 +22,12 @@ function schroedinger_dynamic(
     timeevolution.schroedinger_dynamic(tspan, psi, func; kwargs...)
 end
 
+"""
+master_dynamic(tspan, psi, h, params, J, rates; kwargs)
+
+Wraps `master_dynamic` from QuantumOptics by accepting
+our custom  [`Hamiltonian`](@ref) structure.
+"""
 function master_dynamic(
     tspan,
     psi,

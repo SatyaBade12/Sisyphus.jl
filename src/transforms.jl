@@ -1,5 +1,14 @@
+"""
+Abstract base class for all transformations between the states.
+"""
 abstract type Transform end
 
+"""
+    StateTransform(input, output)
+    StateTransform(p)
+
+Represents a transformation between two pure states in a Ket form.
+"""
 struct StateTransform <: Transform
 
     basis::Basis
@@ -13,6 +22,13 @@ struct StateTransform <: Transform
 
 end
 
+"""
+    UnitaryTransform(input, output)
+    UnitaryTransform(inputs, U)
+
+Represents a transformation between two pure states in a Ket form,
+or is given by a unitary matrix acting on a set of input states.
+"""
 mutable struct UnitaryTransform <: Transform
 
     basis::Basis

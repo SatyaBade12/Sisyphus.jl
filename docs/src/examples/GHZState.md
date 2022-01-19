@@ -1,5 +1,10 @@
 # GHZ state in Rydberg atoms
 
+```math
+H(t) = \sum_i\left( \frac{\Omega(t)}{2}\sigma_i^x - \delta(t)n_i + \sum_{j < i}\frac{V}{|i-j|^6}n_in_j\right)
+```
+``n_i = (1 + \sigma^z_i)/2``
+
 
 ```julia
 using Revise
