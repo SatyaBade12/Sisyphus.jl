@@ -1,3 +1,6 @@
+# GHZ state in Rydberg atoms
+
+
 ```julia
 using Revise
 using QuantumOptimalControl
@@ -12,6 +15,7 @@ using DifferentialEquations: DP5, Tsit5, BS3, Vern7
 using NLopt
 ProgressMeter.ijulia_behavior(:clear)
 ```
+
 
 
 <div style="padding: 1em; background-color: #f8d6da; border: 1px solid #f5c6cb; font-weight: bold;">
@@ -35,14 +39,16 @@ for more information.
 ```julia
 bs = SpinBasis(1//2)
 sx = sigmax(bs)
-ni = 0.5*(identityoperator(bs) + sigmaz(bs));
+ni = 0.5*(identityoperator(bs) + sigmaz(bs))
 ```
+
 
 
 ```julia
 V = 2π*24.0
 δe = -2π*4.5
 ```
+
 
 
 
@@ -54,20 +60,23 @@ V = 2π*24.0
 
 ```julia
 n_atoms = 4
-bsys = tensor([bs for i in 1:n_atoms]...);
+bsys = tensor([bs for i in 1:n_atoms]...)
 ```
+
 
 
 ```julia
 H0 = V*sum([embed(bsys, [i, j], [ni, ni])/abs(i-j)^6  for i in 1:n_atoms for j in i+1:n_atoms])
-H0 -= δe*sum([embed(bsys, [i], [ni]) for i in [1, n_atoms]]);
+H0 -= δe*sum([embed(bsys, [i], [ni]) for i in [1, n_atoms]])
 ```
+
 
 
 ```julia
 H1 = 0.5*sum([embed(bsys, [i], [sx]) for i in 1:n_atoms])
-H2 = -sum([embed(bsys, [i], [ni]) for i in 1:n_atoms]);
+H2 = -sum([embed(bsys, [i], [ni]) for i in 1:n_atoms])
 ```
+
 
 
 ```julia
@@ -78,8 +87,9 @@ function GHZ_state(n_atoms)
 end 
 
 ground_state(n_atoms) = tensor([spindown(bs) for i in 1:n_atoms]...)
-trans = StateTransform(ground_state(n_atoms)=>GHZ_state(n_atoms));
+trans = StateTransform(ground_state(n_atoms)=>GHZ_state(n_atoms))
 ```
+
 
 
 ```julia
@@ -92,6 +102,7 @@ ann = FastChain(FastDense(1, n_neurons, tanh),
 θ = initial_params(ann)  
 n_params = length(θ)
 ```
+
 
 
 
@@ -121,8 +132,9 @@ function loss(p)
 end
 
 res = DiffEqFlux.sciml_train(loss, initial_params(ann), ADAM(0.1f0), maxiters = 5000)
-θ = Vector{Float64}(res.u);
+θ = Vector{Float64}(res.u)
 ```
+
 
 
 ```julia
@@ -137,25 +149,29 @@ cost = CostFunction((x, y) -> 1-real(-x'*y),
 
 
 
+
     CostFunction(var"#19#21"(), var"#20#22"())
 
 
 
 
 ```julia
-H = Hamiltonian(H0, [H1, H2], coeffs);
+H = Hamiltonian(H0, [H1, H2], coeffs)
 ```
+
 
 
 ```julia
-prob = QOCProblem(H, trans, (t0, t1), cost);
+prob = QOCProblem(H, trans, (t0, t1), cost)
 ```
+
 
 
 ```julia
 sol = solve(prob, θ, ADAM(0.005); maxiter=400)
 sol1 = solve(prob, sol.params, ADAM(0.01); maxiter=1400)
 ```
+
 
     [32mProgress: 100%|█████████████████████████████████████████| Time: 0:12:08[39m
     [34m  distance:    0.005951537629625747[39m
@@ -173,6 +189,7 @@ sol1 = solve(prob, sol.params, ADAM(0.01); maxiter=1400)
 ```julia
 plot(sol1.trace)
 ```
+
 
 
 
@@ -239,14 +256,16 @@ savefig(f, "GHZ_4_atoms_wfs.eps")
 
 
 
+
     "GHZ_4_atoms_wfs.eps"
 
 
 
 
 ```julia
-tout, psit = schroedinger_dynamic(ts, ground_state(n_atoms), H, sol1.params);
+tout, psit = schroedinger_dynamic(ts, ground_state(n_atoms), H, sol1.params)
 ```
+
 
 
 ```julia
@@ -268,11 +287,9 @@ savefig(f,"GHZ_4_atoms_overlap.eps")
 
 
 
+
     "GHZ_4_atoms_overlap.eps"
 
 
 
 
-```julia
-
-```

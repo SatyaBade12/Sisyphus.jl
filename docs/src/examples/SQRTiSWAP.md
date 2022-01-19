@@ -1,3 +1,6 @@
+# ``\sqrt{iSWAP}`` gate in superconducting qubits
+
+
 ```julia
 using Revise
 using QuantumOptimalControl
@@ -11,6 +14,7 @@ using Random
 using ProgressMeter
 ProgressMeter.ijulia_behavior(:clear)
 ```
+
 
 
 <div style="padding: 1em; background-color: #f8d6da; border: 1px solid #f5c6cb; font-weight: bold;">
@@ -52,6 +56,7 @@ for more information.
 
 
 
+
     29.530970943744055
 
 
@@ -66,8 +71,9 @@ a1 = destroy(bs)⊗id
 a1d = create(bs)⊗id
 a2 = id⊗destroy(bs)
 a2d = id⊗create(bs)
-id12 = id⊗id;
+id12 = id⊗id
 ```
+
 
 
 ```julia
@@ -77,6 +83,7 @@ H2 = a1d*a1 + 0.5*id12
 H3 = a2d*a2 + 0.5*id12
 t0, t1 = 0.0, 16.0
 ```
+
 
 
 
@@ -96,6 +103,7 @@ ann = FastChain(FastDense(1, n_neurons, tanh),
 θ = Vector{Float64}(initial_params(ann))     
 n_params = length(θ)
 ```
+
 
 
 
@@ -129,8 +137,9 @@ function loss(p)
 end
 
 res = DiffEqFlux.sciml_train(loss, initial_params(ann), ADAM(0.1f0), maxiters = 500)
-θ = Vector{Float64}(res.u);
+θ = Vector{Float64}(res.u)
 ```
+
 
 
 ```julia
@@ -138,8 +147,9 @@ coeffs(p, t) = let v=ann([t], p)
                     [v[1], ω₁ + v[2], ω₂ + v[3]]
                end 
 
-H = Hamiltonian(H0, [H1, H2, H3], coeffs);
+H = Hamiltonian(H0, [H1, H2, H3], coeffs)
 ```
+
 
 
 ```julia
@@ -151,8 +161,9 @@ states = [fockstate(bs, 0)⊗fockstate(bs, 0),
 trans = UnitaryTransform(states, [[1 0 0 0];
                                   [0 1 1.0im 0]/√2;
                                   [0 1.0im 1 0]/√2;
-                                  [0 0.0 0.0 1.0]]);
+                                  [0 0.0 0.0 1.0]])
 ```
+
 
 
 ```julia
@@ -164,19 +175,22 @@ cost = CostFunction((x,y)-> 1.0.-real(x'*y), bcs)
 
 
 
+
     CostFunction(var"#1#2"(), bcs)
 
 
 
 
 ```julia
-prob = QOCProblem(H, trans,(t0, t1), cost);
+prob = QOCProblem(H, trans,(t0, t1), cost)
 ```
+
 
 
 ```julia
 sol = solve(prob, θ, ADAM(0.01); maxiter=100)
 ```
+
 
     [32mProgress: 100%|█████████████████████████████████████████| Time: 0:40:35[39m
     [34m  distance:     0.008843759024369402[39m
@@ -194,6 +208,7 @@ sol1 = solve(prob, sol.params, ADAM(0.001); alg=DP5(), maxiter=100, abstol=1e-4,
 ```julia
 plot(sol.distance_trace)
 ```
+
 
 
 
@@ -244,6 +259,7 @@ f2(t) = ann([t], sol.params)[3]/2π
 
 
 
+
     "g(t) = ann([t], θ)[1]/2π\nf1(t) = ann([t], θ)[2]/2π\nf2(t) = ann([t], θ)[3]/2π\n"
 
 
@@ -267,6 +283,7 @@ f= plot([
 )
 
 ```
+
 
 
 
@@ -308,6 +325,3 @@ f= plot([
 
 
 
-```julia
-
-```

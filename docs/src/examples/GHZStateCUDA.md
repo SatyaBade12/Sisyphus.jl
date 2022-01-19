@@ -1,3 +1,6 @@
+# GHZ state in Rydberg atoms (CUDA)
+
+
 ```julia
 using QuantumOptimalControl
 using QuantumOptics
@@ -8,6 +11,7 @@ using ProgressMeter
 using Random
 ProgressMeter.ijulia_behavior(:clear)
 ```
+
 
 
 <div style="padding: 1em; background-color: #f8d6da; border: 1px solid #f5c6cb; font-weight: bold;">
@@ -31,14 +35,16 @@ for more information.
 ```julia
 bs = SpinBasis(1//2)
 sx = sigmax(bs)
-ni = 0.5*(identityoperator(bs) + sigmaz(bs));
+ni = 0.5*(identityoperator(bs) + sigmaz(bs))
 ```
+
 
 
 ```julia
 V = 2π*24.0
 δe = -2π*4.5
 ```
+
 
 
 
@@ -60,8 +66,9 @@ if n_atoms>8
 end;
 
 H1 = 0.5*sum([embed(bsys, [i], [sx]) for i in 1:n_atoms])
-H2 = -sum([embed(bsys, [i], [ni]) for i in 1:n_atoms]);
+H2 = -sum([embed(bsys, [i], [ni]) for i in 1:n_atoms])
 ```
+
 
 
 ```julia
@@ -72,8 +79,9 @@ function GHZ_state(n_atoms)
 end 
 
 ground_state(n_atoms) = tensor([spindown(bs) for i in 1:n_atoms]...)
-trans = StateTransform(ground_state(n_atoms)=>GHZ_state(n_atoms));
+trans = StateTransform(ground_state(n_atoms)=>GHZ_state(n_atoms))
 ```
+
 
 
 ```julia
@@ -86,6 +94,7 @@ ann = FastChain(FastDense(1, n_neurons, tanh),
 θ = initial_params(ann)  
 n_params = length(θ)
 ```
+
 
 
 
@@ -115,8 +124,9 @@ function loss(p)
 end
 
 res = DiffEqFlux.sciml_train(loss, initial_params(ann), ADAM(0.1f0), maxiters = 5000)
-θ = Vector{Float64}(res.u);
+θ = Vector{Float64}(res.u)
 ```
+
 
 
 ```julia
@@ -131,24 +141,28 @@ cost = CostFunction((x, y) -> 1.0 - abs(sum(conj(x).*y)),
 
 
 
+
     CostFunction(var"#23#25"(), var"#24#26"())
 
 
 
 
 ```julia
-H = Hamiltonian(H0, [H1, H2], coeffs);
+H = Hamiltonian(H0, [H1, H2], coeffs)
 ```
+
 
 
 ```julia
-prob = cu(convert(Float32, QOCProblem(H, trans, (t0, t1), cost)));
+prob = cu(convert(Float32, QOCProblem(H, trans, (t0, t1), cost)))
 ```
+
 
 
 ```julia
 @time sol = solve(prob, res.u, ADAM(0.1f0); maxiter=200, abstol=1e-5, reltol=1e-5)
 ```
+
 
     
     [32mProgress: 100%|█████████████████████████████████████████| Time: 0:23:56[39m
@@ -170,6 +184,7 @@ prob = cu(convert(Float32, QOCProblem(H, trans, (t0, t1), cost)));
 ```julia
 plot(sol.distance_trace)
 ```
+
 
 
 
@@ -236,14 +251,16 @@ savefig(f, "GHZ_12_atoms_wfs.eps")
 
 
 
+
     "GHZ_12_atoms_wfs.eps"
 
 
 
 
 ```julia
-tout, psit = schroedinger_dynamic(ts, ground_state(n_atoms), H, Vector{Float64}(sol.params));
+tout, psit = schroedinger_dynamic(ts, ground_state(n_atoms), H, Vector{Float64}(sol.params))
 ```
+
 
 
 ```julia
@@ -261,6 +278,7 @@ f = plot(
 )
 savefig(f,"GHZ_12_atoms_overlap.eps")
 ```
+
 
 
 
