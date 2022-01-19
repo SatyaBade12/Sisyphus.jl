@@ -40,7 +40,7 @@ end
 
 Initializes the [`QOCProblem`](@ref) by providing the
 arguments for the choice of the optimizer and differential
-equations solver.
+equations solver. Used for the common solve abstraction.
 """
 function init(prob::QOCProblem, args...; kwargs...) where {T<:Real}
 
@@ -81,6 +81,12 @@ function init(prob::QOCProblem, args...; kwargs...) where {T<:Real}
     )
 end
 
+"""
+    solve!(solver)
+
+Solves the quantum optimal control problem.
+Used for the common solve abstraction.
+"""
 function solve!(solver::AdjointSolver{T}) where {T<:Real}
     drives = solver.drives
     cost = solver.cost

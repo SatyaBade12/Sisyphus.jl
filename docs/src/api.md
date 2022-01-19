@@ -29,7 +29,11 @@ QOCProblem
 ## Functions
 
 ```@docs
-solve
+init
+```
+
+```@docs
+solve!
 ```
 
 ```@docs

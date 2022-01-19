@@ -2,6 +2,7 @@
     Hamiltonian(const_op, ops, drives)
 
 Contains the information about the time-dependent Hamiltonian.
+Drives are required to be real-valued functions.
 """
 mutable struct Hamiltonian{T<:Real}
     const_op::AbstractMatrix{Complex{T}}
