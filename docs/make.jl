@@ -41,3 +41,7 @@ makedocs(
         ],
         "API" => "api.md"
     ])
+
+deploydocs(
+    repo = "github.com/SatyaBade12/optimal-control.git",
+)
