@@ -7,7 +7,7 @@ Hamiltonian
 ```
 
 ```@docs
-QuantumOptimalControl.Transform
+Sisyphus.Transform
 ```
 
 ```@docs

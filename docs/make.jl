@@ -1,4 +1,4 @@
-using Documenter, QuantumOptimalControl
+using Documenter, Sisyphus
 
 sourcedir = "examples/"
 markdowndir = "markdown"
@@ -20,7 +20,7 @@ cp(markdowndir, targetpath_examples; force=true)
 rm(markdowndir; recursive=true)
 
 makedocs(
-    sitename="QuantumOptimalControl.jl",
+    sitename="Sisyphus.jl",
     format = Documenter.HTML(prettyurls = false),
     pages=[
         "Home" => "index.md",
@@ -43,5 +43,5 @@ makedocs(
     ])
 
 deploydocs(
-    repo = "github.com/SatyaBade12/optimal-control.git",
+    repo = "github.com/SatyaBade12/Sisyphus.git",
 )
