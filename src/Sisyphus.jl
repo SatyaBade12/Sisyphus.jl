@@ -1,4 +1,4 @@
-module QuantumOptimalControl
+module Sisyphus
 
 import QuantumOpticsBase
 using QuantumOpticsBase: IncompatibleBases
