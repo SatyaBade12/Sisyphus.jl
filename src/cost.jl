@@ -1,9 +1,13 @@
 """
     CostFunction(distance, constraints)
 
-Defines a cost function used for optimization separated into
-two parts, distance measure between quantum states, and 
-optional constraints on the shapes of pulses.
+Defines a cost function used for optimization
+# Arguments
+
+ `distance` denotes a distance measure between quantum states, it should be a real valued function
+for e.g. `d(x,y) = 1 - real(x'*y)` where `x` and `y` are two complex valued vectors.
+
+ `constraints` (optional) denotes the constraints on the shapes of pulses, it should be a real valued function
 """
 mutable struct CostFunction
     distance::Function

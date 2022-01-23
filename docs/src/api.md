@@ -7,7 +7,7 @@ Hamiltonian
 ```
 
 ```@docs
-Sisyphus.Transform
+Transform
 ```
 
 ```@docs
@@ -26,15 +26,15 @@ CostFunction
 QOCProblem
 ```
 
+```@docs
+AdjointSolver
+```
+
+```@docs
+Solution
+```
+
 ## Functions
-
-```@docs
-init
-```
-
-```@docs
-solve!
-```
 
 ```@docs
 schroedinger_dynamic
@@ -48,10 +48,18 @@ master_dynamic
 vectorize
 ```
 
+## GPU
+
 ```@docs
-cu(h::Hamiltonian)
+CuKet(k::Ket)
 ```
 
 ```@docs
-cu(prob::QOCProblem)
+cu
+```
+
+## Single precision
+
+```@docs
+convert(::Type{Float32}, prob::QOCProblem)
 ```

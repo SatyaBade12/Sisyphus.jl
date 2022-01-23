@@ -1,28 +1,30 @@
-using Documenter, Sisyphus
+using Documenter, Sisyphus, QuantumOptics
 
 sourcedir = "examples/"
 markdowndir = "markdown"
 targetpath_examples = "docs/src/examples/"
 
-names = filter(name->endswith(name, ".ipynb"), readdir(sourcedir))
+names = filter(name -> endswith(name, ".ipynb"), readdir(sourcedir))
 
 function convert2markdown(name)
     sourcepath = joinpath(sourcedir, name)
     println(sourcepath)
-    run(`jupyter-nbconvert --to markdown --output-dir=$markdowndir $sourcepath --template=docs/markdown_template.tpl`)
+    run(
+        `jupyter-nbconvert --to markdown --output-dir=$markdowndir $sourcepath --template=docs/markdown_template.tpl`,
+    )
 end
 
 for name in names
     convert2markdown(name)
 end
 
-cp(markdowndir, targetpath_examples; force=true)
-rm(markdowndir; recursive=true)
+cp(markdowndir, targetpath_examples; force = true)
+rm(markdowndir; recursive = true)
 
 makedocs(
-    sitename="Sisyphus.jl",
+    sitename = "Sisyphus.jl",
     format = Documenter.HTML(prettyurls = false),
-    pages=[
+    pages = [
         "Home" => "index.md",
         "Installation" => "installation.md",
         "Introduction" => "introduction.md",
@@ -37,11 +39,10 @@ makedocs(
             "GHZ state (CUDA)" => "examples/GHZStateCUDA.md",
             "CZ" => "examples/CZ.md",
             "Rₓ(π/2)" => "examples/RXpi2.md",
-            "√iSWAP" => "examples/SQRTiSWAP.md"
+            "√iSWAP" => "examples/SQRTiSWAP.md",
         ],
-        "API" => "api.md"
-    ])
-
-deploydocs(
-    repo = "github.com/SatyaBade12/Sisyphus.git",
+        "API" => "api.md",
+    ],
 )
+
+deploydocs(repo = "github.com/SatyaBade12/Sisyphus.git")

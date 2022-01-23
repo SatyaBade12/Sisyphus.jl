@@ -1,7 +1,9 @@
 """
     Solution(params)
 
-Contains the parameter and cost function traces after the optimization procedure.
+Contains the optimized parameters after solving the QOCProblem. It also contains traces of
+distance and constraints specified in the CostFunction. Optionally, it contains the full trace
+of parameters.
 """
 mutable struct Solution{T<:Real}
     params::Vector{T}
@@ -18,6 +20,11 @@ mutable struct Solution{T<:Real}
     end
 end
 
+"""
+    AdjointSolver
+
+Solver to evaluate gradients by solving the coupled equations, defined for compatibility with CommonSolve interface.
+"""
 mutable struct AdjointSolver{T<:Real}
     initial_params::Vector{T}
     ode_prob::ODEProblem
@@ -82,10 +89,9 @@ function init(prob::QOCProblem, args...; kwargs...) where {T<:Real}
 end
 
 """
-    solve!(solver)
+    solve!(solver::AdjointSolver{T}) where {T<:Real}
 
 Solves the quantum optimal control problem.
-Used for the common solve abstraction.
 """
 function solve!(solver::AdjointSolver{T}) where {T<:Real}
     drives = solver.drives

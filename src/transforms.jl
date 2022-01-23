@@ -1,13 +1,12 @@
 """
-Abstract base class for all transformations between the states.
+Abstract base class for transformations between states.
 """
 abstract type Transform end
 
 """
-    StateTransform(input, output)
-    StateTransform(p)
+    StateTransform(input::Ket{B,T}, output::Ket{B,T}) where {B, T}
 
-Represents a transformation between two pure states in a Ket form.
+Represents a state to state transformation between two pure states.
 """
 struct StateTransform <: Transform
 
@@ -23,11 +22,11 @@ struct StateTransform <: Transform
 end
 
 """
-    UnitaryTransform(input, output)
-    UnitaryTransform(inputs, U)
+    UnitaryTransform(inputs::Vector{Ket{B, T}}, U::Matrix) where {B, T}
 
-Represents a transformation between two pure states in a Ket form,
-or is given by a unitary matrix acting on a set of input states.
+Represents a unitary transformation between two sets of states.
+The tranformation can be initialized with a vector of kets and
+a unitary matrix representing the desired transformation.
 """
 mutable struct UnitaryTransform <: Transform
 
@@ -83,29 +82,56 @@ function Base.:+(a::UnitaryTransform, p::Pair{Ket{B,T},Ket{B,T}}) where {B,T}
     a
 end
 
+
+"""
+    CuKet(k::Ket)
+
+Returns a Ket with the data allocated on GPU memory.
+"""
 CuKet(k::Ket) = Ket(k.basis, CuVector(k.data))
 
+"""
+    cu(trans::UnitaryTransform)
+
+Returns a unitary transformation with the kets allocated on GPU memory.
+"""
 function cu(trans::UnitaryTransform)
-    inputs = [CuKet(k) for k in trans.inputs]
-    outputs = [CuKet(k) for k in trans.outputs]
-    UnitaryTransform([in => out for (in, out) in zip(inputs, outputs)])
+    UnitaryTransform([
+        CuKet(in) => CuKet(out) for (in, out) in zip(trans.inputs, trans.outputs)
+    ])
 end
 
-function cu(trans::StateTransform)
-    input = CuKet(trans.input)
-    output = CuKet(trans.output)
-    StateTransform(input => output)
-end
+"""
+    cu(trans::StateTransform)
 
+Returns a state to state transformation with the kets allocated on GPU memory.
+"""
+cu(trans::StateTransform) = StateTransform(CuKet(trans.input) => CuKet(trans.output))
+
+"""
+    vectorize(k::Ket)
+
+Returns a ket representing the vectorized form of the density matrix of ket `k`.
+"""
 function vectorize(k::Ket)
     basis = k.basis ⊗ k.basis
     N = length(k.data)
     Ket(basis, reshape(dm(k).data, N * N))
 end
 
+"""
+    vectorize(trans::StateTransform)
+
+Returns a vectorized form of the state to state transformation.
+"""
 vectorize(trans::StateTransform) =
     StateTransform(vectorize(trans.input) => vectorize(trans.output))
 
+"""
+    vectorize(trans::UnitaryTransform)
+
+Returns a vectorized form of the unitary transformation.
+"""
 function vectorize(trans::UnitaryTransform)
     t = UnitaryTransform(trans.basis ⊗ trans.basis)
     for (k1, k2) in zip(trans.inputs, trans.outputs)
@@ -113,6 +139,7 @@ function vectorize(trans::UnitaryTransform)
     end
     t
 end
+
 
 Base.convert(::Type{ComplexF32}, k::Ket) = Ket(k.basis, Vector{ComplexF32}(k.data))
 

@@ -17,6 +17,7 @@ using DataStructures
 using NLopt: Opt
 import NLopt
 import CommonSolve: solve!, init, solve
+import Base: convert
 
 include("hamiltonian.jl")
 include("transforms.jl")
@@ -26,7 +27,8 @@ include("solver.jl")
 include("evolution.jl")
 include("vectorization.jl")
 
-export StateTransform,
+export Transform,
+    StateTransform,
     Hamiltonian,
     UnitaryTransform,
     Solution,
@@ -34,9 +36,12 @@ export StateTransform,
     QOCProblem,
     schroedinger_dynamic,
     master_dynamic,
+    AdjointSolver,
     solve!,
     init,
     solve,
     cu,
+    CuKet,
+    convert,
     vectorize
 end
