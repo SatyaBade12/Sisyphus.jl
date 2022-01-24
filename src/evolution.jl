@@ -23,7 +23,7 @@ function schroedinger_dynamic(
 end
 
 """
-master_dynamic(tspan, psi, h, params, J, rates; kwargs)
+    master_dynamic(tspan, psi, h, params, J, rates; kwargs)
 
 Wraps `master_dynamic` from QuantumOptics by accepting
 our custom  [`Hamiltonian`](@ref) structure and the parameters.
