@@ -11,14 +11,14 @@ $$U(\{c_m\}, T) = e^{-i \int_0^T H(t) \mathrm{d}t}.$$
 The drives $\{c_k(t)\}$ are designed by optimizing a certain cost function. In practice, the cost function is chosen to reflect the quality of the desired transformation and by constraining the pulses:
 
 $$C(\{c_m\}) = \frac{1}{N}\sum_{j=1}^{N}  d(|\psi^{(j)}_f\rangle, U(\{c_m\}, T)|\psi^{(j)}_i\rangle) + F(\{c_m(t)\}),$$
+
 where $d(|\psi^{(j)}_f\rangle, U(\{c_m\}, T)|\psi^{(j)}_i\rangle)$ is some distance measure and $F$ takes into account the experimental constraints such as bounds on control signals, finite bandwidth and power etc.
-
-Numerical methods such as GRAPE and Krotov solve the optimal control problem by representing the drive signals as piece-wise constant functions and iteratively optimizing these discrete values based on the gradient of the cost function with respect to the control parameters\cite{Leung2017, arxiv1902.11284}. In these approaches, for a given set of control signals, the resulting unitary transformation is computed by first-order Trotterization of each time slice. These methods are inherently prone to discretization errors and one must sample the control signals sufficiently to obtain high fidelity protocols. A continuous parametrization of drive signals, combined with higher-order ordinary differential equation solvers is essential for numerical optimal control problems when accuracy can not be traded with computational effort.
-
-Optimization of high-dimensional optimal control problems tends to converge poorly with derivative-free optimizers \cite{machnes2018}. Therefore, we need an efficient evaluation of the gradients,
+Each of these drives can be functions of some parameters $\{ w_i\}$. The gradient of the cost function wrt the parameters is,
 
 $$\frac{\partial C(\{c_m\})}{\partial w_k} = \frac{1}{N}\sum_{j=1}^{N} \frac{\partial}{\partial w_k}d\left(|\psi^{(j)}_f\rangle, |\psi^{(j)}(T)\rangle\right) + \frac{\partial F}{\partial w_k}.$$
-where $|\psi^{(j)\rangle(T)} = U(\{c_m\}, T)|\psi^{(j)}_i\rangle$, and $w_k$ parameterize the control signals $\{c_m\}$. The second term in the above equation can be evaluated with standard automatic differentiation techniques. The first term can be efficiently calculated without propagating the derivative through the ODE solver using the adjoint sensitivity method \cite{chen2019}.
+
+where $|\psi^{(j)\rangle(T)} = U(\{c_m\}, T)|\psi^{(j)}_i\rangle$, and $w_k$ parameterize the control signals $\{c_m\}$. The second term in the above equation can be evaluated with standard automatic differentiation techniques. The first term can be efficiently calculated without propagating the derivative through the ODE solver using the [adjoint sensitivity method](https://arxiv.org/abs/1806.07366).
+
 $$\frac{\partial}{\partial w_k}d\left(|\psi^{(j)}_f\rangle, |\psi^{(j)}(T)\rangle\right) = \frac{\partial d(x,y)}{\partial y} \Big|_{x=|\psi^{(j)}_f\rangle, y = |\psi^{(j)}(T)\rangle} \frac{\partial|\psi^{(j)}(T)\rangle}{\partial w_k}$$
 
 For a closed quantum system, we get the following augmented system of equations,
