@@ -17,5 +17,3 @@ $$H^{e}(t) = H^{e}_{0} + I \otimes H_c(t) - H_c(t)^T \otimes I,$$
 where the constant part of the effective Hamiltonian is,
 
 $$H^{e}_{0} = I \otimes H_0 - H_0^T \otimes I + i\sum_k \gamma_k[J_k^*\otimes J_k - \frac{1}{2} I \otimes J_k^{\dagger}J_k - \frac{1}{2}J_k^TJ_k^*\otimes I].$$
-
-In `Sisyphus.jl`, we provide tools to convert [`Hamiltonian`](@ref) and [`Transform`](@ref)s into their vectorized form.

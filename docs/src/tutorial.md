@@ -63,3 +63,22 @@ sol = solve(prob, initial_params, ADAM(0.01); maxiter=100);
 
 ## Selecting a differential equation solver
 
+The ODE solver used to compute the system dynamics and gradients can be chosen with the keyword `alg`.
+```julia
+sol = solve(prob, initial_params, ADAM(0.01); maxiter=100, alg=DP5(), abstol=1e-6, reltol=1e-6);
+```
+You may select appropriate ODE solvers available in `OrdinaryDiffEq` package. By default `Sisyphus.jl` uses `Tsit5()` algorithm, we encourage you to go through the documentation of [ODE Solvers](https://diffeq.sciml.ai/stable/solvers/ode_solve/#ode_solve) and try different algorithms to identify the algorithm best suited for your problem. In addition, you can also control the solver tolerances by setting `abstol` and `reltol`.
+
+## Optimization in the presence of noise
+
+Optimal control problems in the presence of Lindbladian noise can be solved by converting them into an equivalent [closed system problem](noisy.md) by vectorizing the master equation. Here, we only provide tools to convert [`Hamiltonian`](@ref) and [`Transform`](@ref)s into their vectorized forms. However, it is the responsibility of the users to provide an appropriate distance measure between the two density matrices in the [`CostFunction`](@ref) (check examples) while working with the vectorized forms.
+
+## Solving problems on GPU
+
+Usually, all the kets and operators in `QOCProblem` are allocated on the CPU. In order to solve the problem on a GPU, we need to move the data to GPU memory, this can be done simply with the `cu` function as shown below. Once the data is moved to the GPU, the problem can be solved with the `solve` method as usual
+
+```julia
+cu_prob = cu(QOCProblem(H, trans, (t0, t1), cost))
+solve(cu_prob, init_params, ADAM(0.1); maxiter=100)
+```
+a working code that runs on a GPU can be found in the examples.
