@@ -31,7 +31,7 @@ Transformation can be defined between two Kets as in the following code.
 
 ```julia
 bs = SpinBasis(1//2)
-trans = StateTransform(spindown(bs) => spinup(bs));
+trans = StateTransform(spindown(bs) => spinup(bs))
 ```
 
 It can alternatively be defined on a vector of Kets by providing unitary matrix that acts on the subspace spanned by them and represents the desired unitary evolution.
@@ -47,7 +47,7 @@ states = [fockstate(bs, 0)⊗fockstate(bs, 0),
 trans = UnitaryTransform(states, [[1.0 0.0 0.0 0.0];
                                   [0.0 1.0 1.0im 0.0]/√2;
                                   [0.0 1.0im 1.0 0.0]/√2;
-                                  [0.0 0.0 0.0 1.0]]);
+                                  [0.0 0.0 0.0 1.0]])
 ```
 
 ## Creating and solving a QOC problem
@@ -56,16 +56,22 @@ Once we have constructed the Hamiltonian, cost function, and target unitary tran
 
 ```julia
 prob = QOCProblem(H, trans, (t0, t1), cost)
-sol = solve(prob, initial_params, ADAM(0.01); maxiter=100);
+sol = solve(prob, initial_params, ADAM(0.01); maxiter=100)
 ```
 
 ## Selecting an optimizer
+
+User can pick any of the available optimizers from the Flux or NLopt packages, for example
+```julia
+using Flux.Optimise: RMSProp
+sol = solve(prob, initial_params, RMSProp(0.01); maxiter=100)
+```
 
 ## Selecting a differential equation solver
 
 The ODE solver used to compute the system dynamics and gradients can be chosen with the keyword `alg`.
 ```julia
-sol = solve(prob, initial_params, ADAM(0.01); maxiter=100, alg=DP5(), abstol=1e-6, reltol=1e-6);
+sol = solve(prob, initial_params, ADAM(0.01); maxiter=100, alg=DP5(), abstol=1e-6, reltol=1e-6)
 ```
 You may select appropriate ODE solvers available in `OrdinaryDiffEq` package. By default `Sisyphus.jl` uses `Tsit5()` algorithm, we encourage you to go through the documentation of [ODE Solvers](https://diffeq.sciml.ai/stable/solvers/ode_solve/#ode_solve) and try different algorithms to identify the algorithm best suited for your problem. In addition, you can also control the solver tolerances by setting `abstol` and `reltol`.
 
