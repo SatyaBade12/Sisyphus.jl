@@ -60,8 +60,8 @@ function init(prob::QOCProblem, args...; kwargs...) where {T<:Real}
     drives = prob.hamiltonian.drives
     n_params = length(initial_params)
     check_compatibility(drives, length(ops), n_params)
-    psi, n_dim = input_data(prob.transform, n_params)
-    check_compatibility(prob.cost, n_dim, n_params)
+    psi, n_dim, wf_dim = input_data(prob.transform, n_params)
+    check_compatibility(prob.cost, wf_dim, n_params)
     gradients(ps, t) = jacobian((_ps, _t) -> drives(_ps, _t), ps, t)[1]
     ode_prob = ODEProblem{true}(
         adjoint_system!,
@@ -141,7 +141,7 @@ function input_data(t::UnitaryTransform, n_params::Integer)
     wf_size = length(t.inputs[1])
     psi = hcat([elm.data for elm in t.inputs]...)
     psi = hcat([psi, zeros(eltype(t.inputs[1].data), wf_size, n_dim * n_params)]...)
-    psi, n_dim
+    psi, n_dim, wf_size
 end
 
 function input_data(t::StateTransform, n_params::Integer)
@@ -149,7 +149,7 @@ function input_data(t::StateTransform, n_params::Integer)
     wf_size = length(t.input)
     psi = hcat([t.input.data]...)
     psi = hcat([psi, zeros(eltype(t.input.data), wf_size, n_params)]...)
-    psi, n_dim
+    psi, n_dim, wf_size
 end
 
 output_data(t::StateTransform) = hcat([t.output.data]...)

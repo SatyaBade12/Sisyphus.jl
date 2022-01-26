@@ -4,14 +4,14 @@ The main goal of this tutorial is to introduce the terminology and workflow of t
 
 ## Constructing a Hamiltonian
 
-We split the Hamiltonian into time-independent and time-dependent parts. Operators constituting the Hamiltonian are represented by QuantumOptics operators. For a list of operators we submit a corresponding list of real-valued drives that multiplies them respectively. Below is a construction of a simple two-level Hamiltonian with a parameterized Gaussian shaped drive
+We split the Hamiltonian into time-independent and time-dependent parts. Operators constituting the Hamiltonian are represented by QuantumOptics operators. For a list of operators we submit a `drives` function that returns the corresponding list of real-valued drives that multiplies the operators respectively. Below is a construction of a simple two-level Hamiltonian with a parameterized Gaussian shaped drive
 
 $$H(t)/\hbar\omega_0 = -\frac{1}{2}\sigma_z + \Omega(p, t)\sigma_x$$
 
 ```julia
 bs = SpinBasis(1//2)
-Ω(p, t) = p[1] * exp(-p[2] * t^2) + p[3]
-H = Hamiltonian(-0.5*sigmaz(bs), [sigmax(bs)], [Ω])
+Ω(p, t) = [p[1] * exp(-p[2] * t^2) + p[3]]
+H = Hamiltonian(-0.5*sigmaz(bs), [sigmax(bs)], Ω)
 ```
 
 ## Constructing a cost function
@@ -20,9 +20,9 @@ Cost functions is composed of a distance function measuring the overlap of the q
 
 ```julia
 (t0, t1) = (0.0, 1.0)
-Ω(p, t) = p[1] * exp(-p[2] * t^2) + p[3]
-cost = CostFunction((x, y) -> 1 - abs2(x' * y),
-                     p -> Ω(p, t0)^2 + Ω(p, t0)^2)
+Ω(p, t) = [p[1] * exp(-p[2] * t^2) + p[3]]
+cost = CostFunction((x, y) -> 1.0 - abs2(x' * y),
+                     p -> Ω(p, t0)[1]^2 + Ω(p, t1)[1]^2)
 ```
 
 ## Defining a transformation
@@ -71,7 +71,10 @@ You may select appropriate ODE solvers available in `OrdinaryDiffEq` package. By
 
 ## Optimization in the presence of noise
 
-Optimal control problems in the presence of Lindbladian noise can be solved by converting them into an equivalent [closed system problem](noisy.md) by vectorizing the master equation. Here, we only provide tools to convert [`Hamiltonian`](@ref) and [`Transform`](@ref)s into their vectorized forms. However, it is the responsibility of the users to provide an appropriate distance measure between the two density matrices in the [`CostFunction`](@ref) (check examples) while working with the vectorized forms.
+Optimal control problems in the presence of Lindbladian noise can be solved by converting them into an equivalent [closed system problem](noisy.md) by vectorizing the master equation. Here, we only provide tools to convert [`Hamiltonian`](@ref) and [`Transform`](@ref)s into their vectorized forms. However, it is the responsibility of the users to provide an appropriate distance measure between the two density matrices in the [`CostFunction`](@ref) (check examples) while working with the vectorized forms. For example, one can write Frobenius norm in its vectorized form as
+
+$$\|\rho - \sigma\|_F = \sqrt{\text{Tr}(\rho - \sigma)^\dagger(\rho - \sigma)} = \sqrt{\text{vec}(\rho - \sigma)^\dagger\text{vec}(\rho - \sigma)},$$
+and define a correspoding distance function as `(x, y) -> 1.0 - sqrt((x - y)' * (x - y))`.
 
 ## Solving problems on GPU
 
