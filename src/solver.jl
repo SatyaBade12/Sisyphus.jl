@@ -49,7 +49,7 @@ Initializes the [`QOCProblem`](@ref) by providing the
 arguments for the choice of the optimizer and differential
 equations solver. Used for the common solve abstraction.
 """
-function init(prob::QOCProblem, args...; kwargs...) where {T<:Real}
+function init(prob::QOCProblem{T}, args...; kwargs...) where {T<:Real}
 
     initial_params, opt = args
     alg = :alg in keys(kwargs) ? kwargs[:alg] : Tsit5()
@@ -59,9 +59,9 @@ function init(prob::QOCProblem, args...; kwargs...) where {T<:Real}
     ops = prob.hamiltonian.operators
     drives = prob.hamiltonian.drives
     n_params = length(initial_params)
-    check_compatibility(drives, length(ops), n_params)
+    check_compatibility(drives, length(ops), n_params, T)
     psi, n_dim, wf_dim = input_data(prob.transform, n_params)
-    check_compatibility(prob.cost, wf_dim, n_params)
+    check_compatibility(prob.cost, wf_dim, n_params, T)
     gradients(ps, t) = jacobian((_ps, _t) -> drives(_ps, _t), ps, t)[1]
     ode_prob = ODEProblem{true}(
         adjoint_system!,
@@ -328,11 +328,11 @@ function optimize!(
 
 end
 
-function check_compatibility(drives::Function, n_ops::Integer, n_params::Integer)
-    if !applicable(drives, rand(n_params), rand())
+function check_compatibility(drives::Function, n_ops::Integer, n_params::Integer, T::DataType)
+    if !applicable(drives, rand(T, n_params), rand(T))
         throw(ArgumentError("drives should be of the form: f(params, t)"))
     end
-    if length(drives(rand(n_params), rand())) != n_ops
+    if length(drives(rand(T, n_params), rand(T))) != n_ops
         throw(
             ArgumentError(
                 "drives must return a vector of length equal to the number of operators",
@@ -341,23 +341,23 @@ function check_compatibility(drives::Function, n_ops::Integer, n_params::Integer
     end
 end
 
-function check_compatibility(cost::CostFunction, n_dim::Integer, n_params::Integer)
+function check_compatibility(cost::CostFunction, n_dim::Integer, n_params::Integer, T::DataType)
     if cost.constraints != nothing
-        if !applicable(cost.constraints, rand(n_params))
+        if !applicable(cost.constraints, rand(T, n_params))
             throw(
                 ArgumentError(
                     "constraints in the cost function should be of the form: f(params)",
                 ),
             )
         end
-        if !isreal(cost.constraints(rand(n_params)))
+        if !isreal(cost.constraints(rand(T, n_params)))
             throw(ArgumentError("constraints function must return real value"))
         end
     end
-    if !applicable(cost.distance, rand(ComplexF64, n_dim), rand(ComplexF64, n_dim))
+    if !applicable(cost.distance, rand(Complex{T}, n_dim), rand(Complex{T}, n_dim))
         throw(ArgumentError("invalid distance in the cost function"))
     end
-    if !isreal(cost.distance(rand(ComplexF64, n_dim), rand(ComplexF64, n_dim)))
+    if !isreal(cost.distance(rand(Complex{T}, n_dim), rand(Complex{T}, n_dim)))
         throw(ArgumentError("distance function must return a real value"))
     end
 end
