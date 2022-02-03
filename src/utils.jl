@@ -30,7 +30,7 @@ interval(t::T, a::T, b::T) where {T <: Real} = heaviside(t - a) - heaviside(t - 
 Piecewise constant interpolation of equidistant samples `p`.
 """
 function piecewise_const_interp(p::Vector{T}, t::T; t0=T(0), t1=T(1)) where {T <: Real}
-    ts = collect(t0:(t1 - t0)/length(p):t1)
+    ts = t0:(t1 - t0)/length(p):t1
     sum(p[i] * interval(t, ts[i], ts[i + 1]) for i=1:length(ts) - 1)
 end
 
@@ -41,7 +41,7 @@ Linear interpolation of equidistant samples `p`.
 """
 function linear_interp(p::Vector{T}, t::T; t0=T(0), t1=T(1)) where {T <: Real}
     Δt = (t1 - t0)/(length(p) - 1)
-    ts = collect(t0:Δt:t1)
+    ts = t0:Δt:t1
     sum((p[i] + (t - ts[i]) * (p[i + 1] - p[i]) / Δt) * interval(t, ts[i], ts[i + 1]) for i=1:length(ts) - 1)
 end
 
@@ -52,7 +52,7 @@ Cubic spline interpolation of equidistant samples `p` with natural boundary cond
 """
 function cubic_spline_interp(p::Vector{T}, t::T; t0=T(0), t1=T(1)) where {T <: Real}
     Δt = (t1 - t0)/(length(p) - 1)
-    ts = collect(t0:Δt:t1)
+    ts = t0:Δt:t1
     
     v = 4 * ones(T, length(p) - 2)
     h = ones(T, length(p) - 3)
