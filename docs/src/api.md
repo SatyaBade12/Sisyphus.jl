@@ -48,6 +48,28 @@ master_dynamic
 vectorize
 ```
 
+### Utilities
+
+```@docs
+heaviside
+```
+
+```@docs
+interval
+```
+
+```@docs
+piecewise_const_interp
+```
+
+```@docs
+linear_interp
+```
+
+```@docs
+cubic_spline_interp
+```
+
 ## GPU
 
 ```@docs

@@ -26,6 +26,7 @@ include("problem.jl")
 include("solver.jl")
 include("evolution.jl")
 include("vectorization.jl")
+include("utils.jl")
 
 export Transform,
     StateTransform,
@@ -43,5 +44,10 @@ export Transform,
     cu,
     CuKet,
     convert,
-    vectorize
+    vectorize,
+    heaviside,
+    interval,
+    piecewise_const_interp,
+    linear_interp,
+    cubic_spline_interp
 end
