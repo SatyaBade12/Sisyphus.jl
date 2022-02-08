@@ -37,7 +37,7 @@ makedocs(
             "Noisy two-level system" => "examples/TwoLevelSystemNoisy.md",
             "Rₓ(π/2)" => "examples/RXpi2.md",
             "√iSWAP" => "examples/SQRTiSWAP.md",
-            "CZ" => "examples/CZ.md",
+            "CZ" => "examples/CZ2.md",
             "GHZ state" => "examples/GHZState.md",
             "GHZ state 12 atoms (CUDA)" => "examples/GHZStateCUDANeuralNetwork.md",
             "GHZ state 16 atoms (CUDA)" => "examples/GHZStateCUDALinearInterp.md",
