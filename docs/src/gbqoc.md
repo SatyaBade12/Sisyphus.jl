@@ -21,15 +21,15 @@ $$\frac{\partial C(\{c_m\})}{\partial w_k} = \frac{1}{N}\sum_{j=1}^{N} \frac{\pa
 
 where $|\psi^{(j)}(T)\rangle = U(\{c_m\}, T)|\psi^{(j)}_i\rangle$ and $w_k$ parameterize the control signals $\{c_m\}$. The second term in the above equation can be evaluated with standard AD techniques. The first term can be efficiently calculated without propagating the derivative through the ODE solver using the [adjoint sensitivity method](https://arxiv.org/abs/1806.07366). We have,
 
-$$\frac{\partial}{\partial w_k}d\left(|\psi^{(j)}_f\rangle, |\psi^{(j)}(T)\rangle\right) = \frac{\partial d(x,y)}{\partial y} \Big|_{x=|\psi^{(j)}_f\rangle, y = |\psi^{(j)}(T)\rangle} \frac{\partial|\psi^{(j)}(T)\rangle}{\partial w_k}$$,
+$$\frac{\partial}{\partial w_k}d\left(|\psi^{(j)}_f\rangle, |\psi^{(j)}(T)\rangle\right) = \frac{\partial d(x,y)}{\partial y} \Big|_{x=|\psi^{(j)}_f\rangle, y = |\psi^{(j)}(T)\rangle} \frac{\partial|\psi^{(j)}(T)\rangle}{\partial w_k}.$$
 
-therefore, the gradient can be computed from $\frac{\partial|\psi^{(j)}(T)\rangle}{\partial w_k}$ For a closed quantum system, we get the following augmented system of equations,
+Therefore, the gradient $\partial C(\{c_m\})/\partial w_k$ can be computed from $|\psi^{(j)}(T)\rangle$ and $\partial|\psi^{(j)}(T)\rangle/ \partial w_k$. For a closed quantum system, we get the following augmented system of equations,
 
 $$\frac{\mathrm{d}|\psi^{(j)}\rangle}{\mathrm{d}t} = -i H(t) |\psi^{(j)}\rangle$$ 
 $$\frac{\mathrm{d}}{\mathrm{d}t} \frac{\partial|\psi^{(j)}\rangle}{\partial w_k} = -i\left[H(t) \frac{\partial|\psi^{(j)}\rangle}{\partial w_k} + \sum_{m=1}^{M}\frac{\partial c_m(t)}{\partial w_k} H_m |\psi^{(j)}\rangle\right],$$
 with initial conditions $|\psi^{(j)}(0)\rangle = |\psi^{(j)}_i\rangle$ and $\partial|\psi^{(j)}(0)\rangle/\partial w_k = 0$.
 
-These coupled equations can be solved using a higher-order ODE solver and gradients wrt the parameters can be evaluated to the desired numerical accuracy. For a given set of parameters, knowing the cost function and the gradients, one could use any gradient based optimization method to iteratively update the parameters, until a satisfactory solution is found.
+These coupled equations can be solved using a higher-order ODE solver and gradients wrt the parameters can be evaluated to the desired numerical accuracy. For a given set of parameters, knowing the cost function and the gradients, one could then use any gradient based optimization method to iteratively update the parameters, until a satisfactory solution is found.
 
 Note that the algorithm presented here is quite similar to [GOAT](https://doi.org/10.1103/physrevlett.120.150401), except that the equations we solve are expressed only in terms of states instead of the evolution operator. Therefore, effectively `Sisyphus.jl` requires less memory compared to GOAT!
 

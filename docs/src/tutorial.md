@@ -4,7 +4,7 @@ The main goal of this tutorial is to introduce the terminology and workflow of t
 
 ## Constructing a [`Hamiltonian`](@ref)
 
-We split the Hamiltonian into time-independent and time-dependent parts. Operators constituting the Hamiltonian are represented by QuantumOptics operators. For a list of operators we submit a `drives` function that returns the corresponding list of real-valued drives that multiplies the operators respectively. Below is a construction of a simple two-level Hamiltonian with a parameterized Gaussian shaped drive
+We split the Hamiltonian into time-independent and time-dependent parts. Operators constituting the Hamiltonian are represented by QuantumOptics operators. For a list of operators we submit a drives function that returns the corresponding list of real-valued drives that multiplies the operators respectively. Below is a construction of a simple two-level Hamiltonian with a parameterized Gaussian shaped drive
 
 $$H(t)/\hbar\omega_0 = -\frac{1}{2}\sigma_z + \Omega(p, t)\sigma_x$$
 
