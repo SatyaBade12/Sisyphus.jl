@@ -1,5 +1,5 @@
 using Test
-using QuantumOptimalControl
+using Sisyphus
 using QuantumOpticsBase: IncompatibleBases
 using QuantumOptics
 using Flux: ADAM

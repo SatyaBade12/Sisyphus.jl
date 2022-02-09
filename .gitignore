@@ -1,1 +1,4 @@
 Manifest.toml
+docs/build/
+docs/src/examples/
+examples/.ipynb_checkpoints/

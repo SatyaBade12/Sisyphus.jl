@@ -1,4 +1,4 @@
-module QuantumOptimalControl
+module Sisyphus
 
 import QuantumOpticsBase
 using QuantumOpticsBase: IncompatibleBases
@@ -17,6 +17,7 @@ using DataStructures
 using NLopt: Opt
 import NLopt
 import CommonSolve: solve!, init, solve
+import Base: convert
 
 include("hamiltonian.jl")
 include("transforms.jl")
@@ -25,8 +26,10 @@ include("problem.jl")
 include("solver.jl")
 include("evolution.jl")
 include("vectorization.jl")
+include("utils.jl")
 
-export StateTransform,
+export Transform,
+    StateTransform,
     Hamiltonian,
     UnitaryTransform,
     Solution,
@@ -34,9 +37,17 @@ export StateTransform,
     QOCProblem,
     schroedinger_dynamic,
     master_dynamic,
+    AdjointSolver,
     solve!,
     init,
     solve,
     cu,
-    vectorize
+    CuKet,
+    convert,
+    vectorize,
+    heaviside,
+    interval,
+    piecewise_const_interp,
+    linear_interp,
+    cubic_spline_interp
 end

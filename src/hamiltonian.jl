@@ -1,3 +1,14 @@
+"""
+    Hamiltonian(const_op::op,
+                ops::Vector{op}),
+                drives::Function) where {op<:AbstractOperator}
+
+Structure to represent a time-dependent Hamiltonian.
+
+NOTE: Drives are required to be real-valued functions and should be of the form
+      `drives(p::Vector{T}, t::T) where {T<:Real}`, where `p` is a vector of real values parametrizing
+      the control knobs and `t` is the time.
+"""
 mutable struct Hamiltonian{T<:Real}
     const_op::AbstractMatrix{Complex{T}}
     basis_l::Basis
@@ -34,6 +45,11 @@ mutable struct Hamiltonian{T<:Real}
     end
 end
 
+"""
+    cu(h::Hamiltonian)
+
+Converts the Hamiltonian with the operators allocated on GPU memory.
+"""
 cu(h::Hamiltonian) = Hamiltonian(
     CuSparseMatrixCSC(h.const_op),
     h.basis_l,
@@ -42,6 +58,10 @@ cu(h::Hamiltonian) = Hamiltonian(
     h.drives,
 )
 
+"""
+    convert(::Type{Float32}, h::Hamiltonian)
+Returns a Hamiltonian with all operators in single precision.
+"""
 Base.convert(::Type{Float32}, h::Hamiltonian) = Hamiltonian(
     SparseMatrixCSC{ComplexF32,Int64}(h.const_op),
     h.basis_l,
