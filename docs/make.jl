@@ -46,4 +46,4 @@ makedocs(
     ],
 )
 
-deploydocs(repo = "github.com/SatyaBade12/Sisyphus.git")
+deploydocs(repo = "github.com/qm-labs/Sisyphus.git", devbranch = "main", devurl="docs")
