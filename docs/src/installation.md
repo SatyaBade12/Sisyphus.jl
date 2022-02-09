@@ -3,5 +3,5 @@
 You can install `Sisyphus.jl` and it's dependencies in the REPL (press `]` to enter the `Pkg` mode) with
 
 ```
-pkg> add https://github.com/qm-labs/Sisyphus.git
+pkg> add https://github.com/entropy-lab/Sisyphus.git
 ```
