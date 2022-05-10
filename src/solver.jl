@@ -55,6 +55,12 @@ function init(prob::QOCProblem{T}, args...; kwargs...) where {T<:Real}
     alg = :alg in keys(kwargs) ? kwargs[:alg] : Tsit5()
     maxiter = :maxiter in keys(kwargs) ? kwargs[:maxiter] : 100
     save_iters = :save_iters in keys(kwargs) ? kwargs[:save_iters] : 1:-1
+    kwargs_dict = Dict()
+    for k in collect(Base.pairs(kwargs))
+        if k[1] ∉ [:alg, :maxiter, :save_iters]
+            kwargs_dict[k[1]] = k[2]
+        end
+    end
     const_op = prob.hamiltonian.const_op
     ops = prob.hamiltonian.operators
     drives = prob.hamiltonian.drives
@@ -84,7 +90,7 @@ function init(prob::QOCProblem{T}, args...; kwargs...) where {T<:Real}
         n_dim,
         maxiter,
         save_iters,
-        kwargs,
+        (;kwargs_dict...),
     )
 end
 
