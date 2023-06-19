@@ -8,7 +8,7 @@ A high-performance library for gradient based quantum optimal control
 Sisyphus is not yet available in the official registry of Julia packages. You can install Sisyphus and it's dependencies in the REPL (press `]` to enter the `Pkg` mode) with the github link,
 
 ```
-pkg> add git@github.com:entropy-lab/Sisyphus.git
+pkg> add git@github.com:SatyaBade12/Sisyphus.git
 ```
 
 # Documentation
@@ -18,7 +18,7 @@ To generate the documentation locally,
 1) Clone the repository
    
 ```shell
-git clone git@github.com:entropy-lab/Sisyphus.git
+git clone git@github.com:SatyaBade12/Sisyphus.git
 cd Sisyphus   
 ```
 
