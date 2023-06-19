@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>GHZ state · Sisyphus.jl</title><script data-outdated-warner src="../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.045/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.13.24/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL=".."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../assets/documenter.js"></script><script src="../siteinfo.js"></script><script src="../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../index.html">Sisyphus.jl</a></span></div><form class="docs-search" action="../search.html"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../index.html">Home</a></li><li><a class="tocitem" href="../installation.html">Installation</a></li><li><a class="tocitem" href="../introduction.html">Introduction</a></li><li><a class="tocitem" href="../gbqoc.html">Gradient-based QOC</a></li><li><a class="tocitem" href="../noisy.html">Open quantum systems</a></li><li><a class="tocitem" href="../tutorial.html">Tutorial</a></li><li><span class="tocitem">Examples</span><ul><li><a class="tocitem" href="DRAG.html">DRAG</a></li><li><a class="tocitem" href="TwoLevelSystem.html">Two-level system</a></li><li><a class="tocitem" href="TwoLevelSystemNoisy.html">Noisy two-level system</a></li><li><a class="tocitem" href="RXpi2.html">Rₓ(π/2)</a></li><li><a class="tocitem" href="SQRTiSWAP.html">√iSWAP</a></li><li><a class="tocitem" href="CZ2.html">CZ</a></li><li class="is-active"><a class="tocitem" href="GHZState.html">GHZ state</a></li><li><a class="tocitem" href="GHZStateCUDANeuralNetwork.html">GHZ state 12 atoms (CUDA)</a></li><li><a class="tocitem" href="GHZStateCUDALinearInterp.html">GHZ state 16 atoms (CUDA)</a></li></ul></li><li><a class="tocitem" href="../api.html">API</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Examples</a></li><li class="is-active"><a href="GHZState.html">GHZ state</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href="GHZState.html">GHZ state</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/SatyaBade12/Sisyphus.jl/blob/main/docs/src/examples/GHZState.md" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="GHZ-state-in-Rydberg-atoms"><a class="docs-heading-anchor" href="#GHZ-state-in-Rydberg-atoms">GHZ state in Rydberg atoms</a><a id="GHZ-state-in-Rydberg-atoms-1"></a><a class="docs-heading-anchor-permalink" href="#GHZ-state-in-Rydberg-atoms" title="Permalink"></a></h1><p>In this tutorial, we describe the preparation of the <span>$N$</span>-particle GHZ state</p><p class="math-container">\[|\text{GHZ}_N\rangle = \frac{1}{\sqrt{2}}\left(|0101\dots\rangle + |1010\dots\rangle\right),\]</p><p>in a linear chain of Rydberg atoms, as described in <a href="https://www.science.org/doi/10.1126/science.aax9743">Omran et al. 2019</a>.</p><p>1D array of Rydberg atoms driven by global pulses can be desribed with the following Hamiltonian</p><p class="math-container">\[H(t) =  \frac{\Omega(t)}{2}\sum_{i = 1}^N\sigma_x^{(i)} - \sum_{i = 1}^N\Delta_i(t)n_i + \sum_{i &lt; j}\frac{V}{|i-j|^6}n_in_j,\]</p><p>where <span>$n_i = |1\rangle\langle1|_i$</span> are the excited state occupation operators. <span>$\Delta_i(t) = \Delta(t) + \delta_i$</span> is the local effective detuning set by the Rydberg laser and the local light shift. We set <span>$\delta_i = \delta_e$</span> to be non-zero only on atoms 1 and <span>$N$</span>.</p><pre><code class="language-julia hljs">using Sisyphus
+using QuantumOptics
+using Flux, DiffEqFlux
+using Plots
+using ProgressMeter
+using Random
+
+ProgressMeter.ijulia_behavior(:clear)</code></pre><pre><code class="language-julia hljs">T = 1.1 # in μs
+V = 2π * 24.0 # in MHz
+δe = -2π * 4.5 # in MHz
+n_atoms = 4
+
+bs = SpinBasis(1//2)
+sx = sigmax(bs)
+ni = 0.5*(identityoperator(bs) + sigmaz(bs))
+
+bsys = tensor([bs for i in 1:n_atoms]...)
+H0 = V*sum([embed(bsys, [i, j], [ni, ni])/abs(i-j)^6  for i in 1:n_atoms for j in i+1:n_atoms])
+H0 -= δe*sum([embed(bsys, [i], [ni]) for i in [1, n_atoms]])
+H1 = 0.5*sum([embed(bsys, [i], [sx]) for i in 1:n_atoms])
+H2 = -sum([embed(bsys, [i], [ni]) for i in 1:n_atoms])</code></pre><p>We provide initial guesses for our pulses.</p><pre><code class="language-julia hljs">Ω₀(t) = 2π * min(5.0, 25.0 * t / T, 25.0 * (T - t) / T)
+Δ₀(t) = 2π * (30.0 * t / T - 15.0)
+
+ts = collect(0.0:0.001:T)
+
+blue = theme_palette(:auto).colors.colors[1]
+red = theme_palette(:auto).colors.colors[2]
+plot(ts, Δ₀.(ts)/2π, ylabel=&quot;Δ/2π (MHz)&quot;, color=blue, yguidefont = font(blue), legend=false)
+plot!(Plots.twinx(), ts, Ω₀.(ts)/2π, ylabel=&quot;Ω/2π (MHz)&quot;, color=red, yguidefont = font(red), legend=false)
+plot!(xlabel=&quot;time (μs)&quot;, right_margin = 15Plots.mm)</code></pre><p><img src="GHZState_files/GHZState_5_0.svg" alt="svg"/></p><pre><code class="language-julia hljs">Ω(p, t) = piecewise_const_interp(p[begin:length(p)÷2], t; t0=0.0, t1=T)
+Δ(p, t) = piecewise_const_interp(p[length(p)÷2+1:end], t; t0=0.0, t1=T)
+
+n_params = 30
+ts = collect(0.0:T/n_params:T)
+θ = vcat([Ω₀((ts[i+1] + ts[i])/2) for i=1:n_params], [Δ₀((ts[i+1] + ts[i])/2) for i=1:n_params])</code></pre><pre><code class="language-julia hljs">ts = collect(0.0:0.001:T)
+
+blue = theme_palette(:auto).colors.colors[1]
+red = theme_palette(:auto).colors.colors[2]
+plot(ts, [Δ(θ, t)/2π for t in ts], ylabel=&quot;Δ/2π (MHz)&quot;, color=blue, yguidefont = font(blue), legend=false)
+plot!(Plots.twinx(), ts, [Ω(θ, t)/2π for t in ts], ylabel=&quot;Ω/2π (MHz)&quot;, color=red, yguidefont = font(red), legend=false)
+plot!(xlabel=&quot;time (μs)&quot;, right_margin = 15Plots.mm)</code></pre><p><img src="GHZState_files/GHZState_7_0.svg" alt="svg"/></p><pre><code class="language-julia hljs">function GHZ_state(n_atoms)
+    state = tensor([isodd(i) ? spindown(bs) : spinup(bs) for i=1:n_atoms]...) +
+            tensor([isodd(i) ? spinup(bs) : spindown(bs) for i=1:n_atoms]...)
+    state/sqrt(2.0)
+end 
+
+ground_state(n_atoms) = tensor([spindown(bs) for i in 1:n_atoms]...)
+
+cost = CostFunction((x, y) -&gt; 1.0 - abs2(x&#39;*y))
+trans = StateTransform(ground_state(n_atoms) =&gt; GHZ_state(n_atoms))
+H = Hamiltonian(H0, [H1, H2], (p, t) -&gt; [Ω(p, t), Δ(p, t)])</code></pre><pre><code class="language-julia hljs">tout, psit = schroedinger_dynamic(ts, ground_state(n_atoms), H, θ)</code></pre><pre><code class="language-julia hljs">plot(ts, real(expect(dm(GHZ_state(n_atoms)), psit)))
+plot!(xlabel=&quot;Time (μs)&quot;, ylabel=&quot;Overlap (|⟨ψ|GHZ⟩|²)&quot;, legend=false)</code></pre><p><img src="GHZState_files/GHZState_10_0.svg" alt="svg"/></p><pre><code class="language-julia hljs">println(&quot;Fidelity: &quot;, real(expect(dm(GHZ_state(n_atoms)), psit[end])))</code></pre><pre><code class="nohighlight hljs">Fidelity: 0.9856598145164646</code></pre><pre><code class="language-julia hljs">prob = QOCProblem(H, trans, (0.0, T), cost)
+sol = solve(prob, θ, ADAM(0.2); abstol=1e-6, reltol=1e-6)</code></pre><pre><code class="nohighlight hljs">[32mProgress: 100%|█████████████████████████████████████████| Time: 0:05:16[39m
+[34m  distance:     4.671056424032649e-5[39m
+[34m  constraints:  0.0[39m</code></pre><pre><code class="language-julia hljs">plot(sol.distance_trace)</code></pre><p><img src="GHZState_files/GHZState_13_0.svg" alt="svg"/></p><pre><code class="language-julia hljs">ts = collect(0.0:0.001:T)
+
+blue = theme_palette(:auto).colors.colors[1]
+red = theme_palette(:auto).colors.colors[2]
+plot(ts, [Δ(sol.params, t)/2π for t in ts], ylabel=&quot;Δ/2π (MHz)&quot;, color=blue, yguidefont = font(blue), legend=false)
+plot!(Plots.twinx(), ts, [Ω(sol.params, t)/2π for t in ts], ylabel=&quot;Ω/2π (MHz)&quot;, color=red, yguidefont = font(red), legend=false)
+plot!(xlabel=&quot;time (μs)&quot;, right_margin = 15Plots.mm)</code></pre><p><img src="GHZState_files/GHZState_14_0.svg" alt="svg"/></p><pre><code class="language-julia hljs">tout, psit = schroedinger_dynamic(ts, ground_state(n_atoms), H, sol.params)</code></pre><pre><code class="language-julia hljs">plot(ts, real(expect(dm(GHZ_state(n_atoms)), psit)))
+plot!(xlabel=&quot;Time (μs)&quot;, ylabel=&quot;Overlap (|⟨ψ|GHZ⟩|²)&quot;, legend=false)</code></pre><p><img src="GHZState_files/GHZState_16_0.svg" alt="svg"/></p><pre><code class="language-julia hljs">println(&quot;Fidelity: &quot;, real(expect(dm(GHZ_state(n_atoms)), psit[end])))</code></pre><pre><code class="nohighlight hljs">Fidelity: 0.9999463779819884</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="CZ2.html">« CZ</a><a class="docs-footer-nextpage" href="GHZStateCUDANeuralNetwork.html">GHZ state 12 atoms (CUDA) »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.24 on <span class="colophon-date" title="Monday 19 June 2023 18:08">Monday 19 June 2023</span>. Using Julia version 1.9.0.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>

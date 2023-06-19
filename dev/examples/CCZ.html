@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>CCZ gate in Rydberg atoms · Sisyphus.jl</title><script data-outdated-warner src="../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.045/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.13.24/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL=".."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../assets/documenter.js"></script><script src="../siteinfo.js"></script><script src="../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../index.html">Sisyphus.jl</a></span></div><form class="docs-search" action="../search.html"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../index.html">Home</a></li><li><a class="tocitem" href="../installation.html">Installation</a></li><li><a class="tocitem" href="../introduction.html">Introduction</a></li><li><a class="tocitem" href="../gbqoc.html">Gradient-based QOC</a></li><li><a class="tocitem" href="../noisy.html">Open quantum systems</a></li><li><a class="tocitem" href="../tutorial.html">Tutorial</a></li><li><span class="tocitem">Examples</span><ul><li><a class="tocitem" href="DRAG.html">DRAG</a></li><li><a class="tocitem" href="TwoLevelSystem.html">Two-level system</a></li><li><a class="tocitem" href="TwoLevelSystemNoisy.html">Noisy two-level system</a></li><li><a class="tocitem" href="RXpi2.html">Rₓ(π/2)</a></li><li><a class="tocitem" href="SQRTiSWAP.html">√iSWAP</a></li><li><a class="tocitem" href="CZ2.html">CZ</a></li><li><a class="tocitem" href="GHZState.html">GHZ state</a></li><li><a class="tocitem" href="GHZStateCUDANeuralNetwork.html">GHZ state 12 atoms (CUDA)</a></li><li><a class="tocitem" href="GHZStateCUDALinearInterp.html">GHZ state 16 atoms (CUDA)</a></li></ul></li><li><a class="tocitem" href="../api.html">API</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href="CCZ.html">CCZ gate in Rydberg atoms</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href="CCZ.html">CCZ gate in Rydberg atoms</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/SatyaBade12/Sisyphus.jl/blob/main/docs/src/examples/CCZ.md" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="CCZ-gate-in-Rydberg-atoms"><a class="docs-heading-anchor" href="#CCZ-gate-in-Rydberg-atoms">CCZ gate in Rydberg atoms</a><a id="CCZ-gate-in-Rydberg-atoms-1"></a><a class="docs-heading-anchor-permalink" href="#CCZ-gate-in-Rydberg-atoms" title="Permalink"></a></h1><p class="math-container">\[H = \frac{\Omega(t)}{2}\sum_{j = 1}^N \left[e^{i\phi(t)}  \sigma_+^j  +  e^{-i\phi(t)} \sigma_-^j - \Delta(t) n_j \right] + \sum_{i &lt; j} \frac{V}{|i-j|^6}n_in_j \]</p><p>see <a href="https://arxiv.org/pdf/1908.06101.pdf">Levine et al.</a></p><pre><code class="language-julia hljs">using Sisyphus
+using QuantumOptics
+using Flux, DiffEqFlux
+using Plots
+using Random
+using LinearAlgebra
+using ProgressMeter
+
+
+ProgressMeter.ijulia_behavior(:clear)</code></pre><pre><code class="language-julia hljs">V = 2π*15.0; # MHz</code></pre><pre><code class="language-julia hljs">n_atoms = 3
+
+bs = NLevelBasis(3)
+bsys = tensor([bs for i in 1:n_atoms]...)
+
+spi = transition(bs, 3, 2)
+smi = transition(bs, 2, 3)
+ni = transition(bs, 3, 3)</code></pre><pre><code class="nohighlight hljs">Operator(dim=3x3)
+  basis: NLevel(N=3)sparse([3], [3], ComplexF64[1.0 + 0.0im], 3, 3)</code></pre><pre><code class="language-julia hljs">H0 =  V*sum([embed(bsys, [i, j], [ni, ni])/abs(i-j)^6  for i in 1:n_atoms for j in i+1:n_atoms])
+H1 = sum([embed(bsys, [i], [ni]) for i in [1, n_atoms]])
+H2 = sum([embed(bsys, [i], [spi]) for i in [1, n_atoms]]) 
+H2 += sum([embed(bsys, [i], [smi]) for i in [1, n_atoms]]) 
+H3 = 1.0im*(sum([embed(bsys, [i], [spi]) for i in [1, n_atoms]]))
+H3 -= 1.0im*(sum([embed(bsys, [i], [smi]) for i in [1, n_atoms]]))</code></pre><pre><code class="language-julia hljs">states = [
+    tensor([nlevelstate(bs, i+1) for i in digits(j-1; base = 2, pad = n_atoms)]...)
+        for j in 1:2^n_atoms]</code></pre><pre><code class="language-julia hljs">U = Matrix{ComplexF64}(Diagonal(ones(2^n_atoms)))
+U[2^n_atoms, 2^n_atoms] = -1.0+0.0im</code></pre><pre><code class="language-julia hljs">trans = UnitaryTransform(states, U)</code></pre><pre><code class="language-julia hljs">n_neurons = 8
+ann = FastChain(FastDense(1, n_neurons, tanh), 
+                FastDense(n_neurons, n_neurons, tanh), 
+                FastDense(n_neurons, n_neurons, tanh), 
+                FastDense(n_neurons, 3))
+θ = initial_params(ann)     
+n_params = length(θ);
+Random.seed!(3)
+θ = 2.0*rand(n_params).-1.0</code></pre><pre><code class="language-julia hljs">t0, t1 = 0.0, 1.0
+sigmoid(x)= @. 2π*7 / (1 + exp(-x))
+coeffs(p, t) = let vals = ann([t], p)
+                [-vals[1], sigmoid(vals[2])*cos(vals[3]), sigmoid(vals[2])*sin(vals[3])]
+               end    
+cost = CostFunction((x, y) -&gt; 1.0-real(x&#39;*y),
+                     p-&gt;2e-2*(sigmoid(ann([t0], p)[2])^2 + sigmoid(ann([t1], p)[2])^2))
+
+H = Hamiltonian(H0, [H1, H2, H3], coeffs)
+prob = QOCProblem(H, trans, (t0, t1), cost)</code></pre><pre><code class="language-julia hljs">sol = solve(prob, θ, ADAM(0.1); maxiter=2000, abstol=1e-4, reltol=1e-4)</code></pre><pre><code class="nohighlight hljs">[32mProgress:  71%|█████████████████████████████            |  ETA: 0:03:30[39m
+[34m  distance:     0.25000116952059076[39m
+[34m  constraints:  1.1512625700095713e-5[39m</code></pre><pre><code class="language-julia hljs">cost.constraints = p-&gt;(sigmoid(ann([t0], p)[2])^2 + sigmoid(ann([t1], p)[2])^2)
+sol1 = solve(prob, sol.params, ADAM(0.008); maxiter=500, abstol=1e-6, reltol=1e-6)</code></pre><pre><code class="nohighlight hljs">[32mProgress: 100%|█████████████████████████████████████████| Time: 0:03:40[39m
+[34m  distance:     0.006063003962643532[39m
+[34m  constraints:  0.012359362552093491[39m</code></pre><pre><code class="language-julia hljs">Ω(t) = sigmoid(ann([t], sol1.params)[2])/2π
+Δ(t) = -ann([t], sol1.params)[1]/2π
+ϕ(t) = ann([t], sol1.params)[3]</code></pre><pre><code class="language-julia hljs">ts = collect(t0:t1/100:t1)
+plot(ts, Ω.(ts), label=&quot;Ω/2π (MHz)&quot;)
+plot!(ts, Δ.(ts), label=&quot;Δ/2π (MHz)&quot;)
+plot!(ts, ϕ.(ts), label=&quot;ϕ (Radians)&quot;)
+ylabel!(&quot;Waveform&quot;)
+xlabel!(&quot;Time (µs)&quot;)</code></pre><p><img src="CCZ_files/CCZ_14_0.svg" alt="svg"/></p><pre><code class="language-julia hljs">tout, psit22 = schroedinger_dynamic(ts, nlevelstate(bs, 2)⊗nlevelstate(bs, 2),
+                                    H, sol1.params)
+tout, psit21 = schroedinger_dynamic(ts, nlevelstate(bs, 2)⊗nlevelstate(bs, 1),
+                                    H, sol1.params)
+tout, psit12 = schroedinger_dynamic(ts, nlevelstate(bs, 1)⊗nlevelstate(bs, 2),
+                                    H, sol1.params)
+tout, psit11 = schroedinger_dynamic(ts, nlevelstate(bs, 1)⊗nlevelstate(bs, 1),
+                                    H, sol1.params)</code></pre><pre><code class="language-julia hljs">plot(tout, [real((nlevelstate(bs, 2)⊗nlevelstate(bs, 2))&#39;*elm) for elm in psit22], label=&quot;|22⟩&quot;)
+plot!(tout, [real((nlevelstate(bs, 2)⊗nlevelstate(bs, 1))&#39;*elm) for elm in psit21], label=&quot;|21⟩&quot;)
+plot!(tout, [real((nlevelstate(bs, 1)⊗nlevelstate(bs, 2))&#39;*elm) for elm in psit12], label=&quot;|12⟩&quot;)
+plot!(tout, [real((nlevelstate(bs, 1)⊗nlevelstate(bs, 1))&#39;*elm) for elm in psit11], label=&quot;|11⟩&quot;, legend=:bottomright)        
+xlabel!(&quot;Time (µs)&quot;)
+ylabel!(&quot;Overlap (⟨ij|ψ⟩)&quot;)</code></pre><p><img src="CCZ_files/CCZ_16_0.svg" alt="svg"/></p></article><nav class="docs-footer"><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.24 on <span class="colophon-date" title="Monday 19 June 2023 18:08">Monday 19 June 2023</span>. Using Julia version 1.9.0.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>

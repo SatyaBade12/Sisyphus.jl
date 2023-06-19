@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>CZ · Sisyphus.jl</title><script data-outdated-warner src="../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.045/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.13.24/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL=".."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../assets/documenter.js"></script><script src="../siteinfo.js"></script><script src="../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../index.html">Sisyphus.jl</a></span></div><form class="docs-search" action="../search.html"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../index.html">Home</a></li><li><a class="tocitem" href="../installation.html">Installation</a></li><li><a class="tocitem" href="../introduction.html">Introduction</a></li><li><a class="tocitem" href="../gbqoc.html">Gradient-based QOC</a></li><li><a class="tocitem" href="../noisy.html">Open quantum systems</a></li><li><a class="tocitem" href="../tutorial.html">Tutorial</a></li><li><span class="tocitem">Examples</span><ul><li><a class="tocitem" href="DRAG.html">DRAG</a></li><li><a class="tocitem" href="TwoLevelSystem.html">Two-level system</a></li><li><a class="tocitem" href="TwoLevelSystemNoisy.html">Noisy two-level system</a></li><li><a class="tocitem" href="RXpi2.html">Rₓ(π/2)</a></li><li><a class="tocitem" href="SQRTiSWAP.html">√iSWAP</a></li><li class="is-active"><a class="tocitem" href="CZ2.html">CZ</a></li><li><a class="tocitem" href="GHZState.html">GHZ state</a></li><li><a class="tocitem" href="GHZStateCUDANeuralNetwork.html">GHZ state 12 atoms (CUDA)</a></li><li><a class="tocitem" href="GHZStateCUDALinearInterp.html">GHZ state 16 atoms (CUDA)</a></li></ul></li><li><a class="tocitem" href="../api.html">API</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Examples</a></li><li class="is-active"><a href="CZ2.html">CZ</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href="CZ2.html">CZ</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/SatyaBade12/Sisyphus.jl/blob/main/docs/src/examples/CZ2.md" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="CZ-gate-in-Rydberg-atoms"><a class="docs-heading-anchor" href="#CZ-gate-in-Rydberg-atoms">CZ gate in Rydberg atoms</a><a id="CZ-gate-in-Rydberg-atoms-1"></a><a class="docs-heading-anchor-permalink" href="#CZ-gate-in-Rydberg-atoms" title="Permalink"></a></h1><p>In order to implement digital quantum computation in Rydberg atoms, ground state <span>$|g\rangle$</span> and hyperfine state <span>$|h\rangle$</span> are used as qubit states. Transitions between these two levels <span>$|g\rangle \leftrightarrow |h\rangle$</span> can be induced with Raman pulses. However, in order to create entanglement between two atoms, another ancillary atomic level has to be introduced and it&#39;s called the Rydberg level <span>$|r\rangle$</span> (essentially a highly excited state). Transitions <span>$|h\rangle \leftrightarrow |r\rangle$</span> are induced with so-called Rydberg pulses, and Rydberg interaction, which prohibits two neighboring atoms to both occupy Rydberg levels, can be used to generate entanglement between the atoms.</p><p>Here we set <span>$|g\rangle \equiv |1\rangle$</span>, <span>$|h\rangle \equiv |2\rangle$</span>, and <span>$|r\rangle \equiv |3\rangle$</span>. Hamiltonian of two Rydberg atoms can then be written as</p><p class="math-container">\[H = \frac{\Omega(t)}{2}\left[e^{i\varphi(t)} \left(\sigma_+^{(1)} + \sigma_+^{(2)}\right) +  e^{-i\varphi(t)} \left(\sigma_-^{(1)} + \sigma_-^{(2)}\right)\right] - \Delta(t) (n_1 + n_2) + V n_1n_2,\]</p><p>where <span>$\sigma^{(i)}_+ = |3\rangle\langle2|_i$</span>, <span>$\sigma^{(i)}_- = |2\rangle\langle3|_i$</span>,  <span>$n_i = |3\rangle\langle3|_i$</span> and <span>$V$</span> is the Rydberg interaction strength.</p><p>The usual technique to realize a <span>$CZ$</span> gate (see <a href="https://arxiv.org/pdf/1908.06101.pdf">Levine et al.</a>) consists of shining two Rydberg pulses with a phase jump in between them. The required phase jump, pulse duration and detuning can be analytically calculated from the Rabi frequency of the Rydberg pulse. </p><p>In this notebook, we find a single Rydberg pulse profile to do a <span>$CZ$</span> gate.</p><pre><code class="language-julia hljs">using Sisyphus
+using QuantumOptics
+using Flux, DiffEqFlux
+using Plots
+using Random
+using ProgressMeter
+
+ProgressMeter.ijulia_behavior(:clear)</code></pre><p>Since pulses are required to be real-valued, we have to rewrite the Hamiltonian</p><p class="math-container">\[H = Vn_1n_2 - \Delta(t)(n_1 + n_2) + \frac{\Omega(t)\cos\varphi(t)}{2}\left(\sigma^{(1)}_x + \sigma^{(2)}_x\right) + \frac{\Omega(t)\sin\varphi(t)}{2}\left(\sigma^{(1)}_y + \sigma^{(2)}_y\right).\]</p><pre><code class="language-julia hljs">V = 2π*10.0 # MHz
+
+bs = NLevelBasis(3)
+bsys = bs⊗bs
+
+id = identityoperator(bs)
+sp1 = transition(bs, 3, 2)⊗id
+sm1 = transition(bs, 2, 3)⊗id
+sp2 = id⊗transition(bs, 3, 2)
+sm2 = id⊗transition(bs, 2, 3)
+n1 = transition(bs, 3, 3)⊗id
+n2 = id⊗transition(bs, 3, 3)
+
+H0 = V*n1*n2
+H1 = (n1 + n2)
+H2 = (sp1 + sp2 + sm1 + sm2)
+H3 = 1.0im*(sp1 + sp2 - sm1 - sm2)</code></pre><pre><code class="language-julia hljs">states= [nlevelstate(bs, 1)⊗nlevelstate(bs, 1),
+         nlevelstate(bs, 1)⊗nlevelstate(bs, 2),
+         nlevelstate(bs, 2)⊗nlevelstate(bs, 1),
+         nlevelstate(bs, 2)⊗nlevelstate(bs, 2)]
+
+trans = UnitaryTransform(states, [[1.0 0 0 0 ];[0 1.0 0 0 ];[0 0 1.0 0 ]; [0 0 0 -1.0]])</code></pre><pre><code class="language-julia hljs">t0, t1 = 0.0, 1.0 # in μs
+Ω(p, t) = piecewise_const_interp(p[begin:length(p)÷3], t; t0=t0, t1=t1)
+Δ(p, t) = piecewise_const_interp(p[length(p)÷3+1:2*length(p)÷3], t; t0=t0, t1=t1)
+φ(p, t) = piecewise_const_interp(p[2*length(p)÷3+1:end], t; t0=t0, t1=t1)
+
+θ = vcat(2π * ones(10), 2π * ones(10), zeros(6), π * ones(6))
+println(&quot;Number of parameters: &quot;, length(θ))</code></pre><pre><code class="nohighlight hljs">Number of parameters: 32</code></pre><pre><code class="language-julia hljs">green = theme_palette(:auto).colors.colors[3]
+
+ts = t0:t1/1000:t1
+plot(ts, [Ω(θ, t) for t in ts], label=&quot;Ω/2π&quot;)
+plot!(ts, [Δ(θ, t) for t in ts], label=&quot;Δ/2π&quot;)
+ylabel!(&quot;Waveform (MHz)&quot;)
+plot!(Plots.twinx(), ts, [φ(θ, t) for t in ts], ylabel=&quot;ϕ (Radians)&quot;, color=green,
+      yguidefont = font(green), legend=false)
+xlabel!(&quot;Time (µs)&quot;, right_margin = 15Plots.mm)</code></pre><p><img src="CZ2_files/CZ2_7_0.svg" alt="svg"/></p><p>We use <code>(x, y) -&gt; 1.0 - real(x&#39;*y)</code> as a cost function since it takes into account proper phases of final states.</p><pre><code class="language-julia hljs">coeffs(p, t) = [-Δ(p, t), Ω(p, t) * cos(φ(p, t)) / 2, Ω(p, t) * sin(φ(p, t)) / 2]
+cost = CostFunction((x, y) -&gt; 1.0 - real(x&#39;*y))
+H = Hamiltonian(H0, [H1, H2, H3], coeffs)
+
+prob = QOCProblem(H, trans, (t0, t1), cost)
+sol = solve(prob, θ, ADAM(0.1); maxiter=150, abstol=1e-6, reltol=1e-6)</code></pre><pre><code class="nohighlight hljs">[32mProgress: 100%|█████████████████████████████████████████| Time: 0:06:18[39m
+[34m  distance:     8.055867831952002e-5[39m
+[34m  constraints:  0.0[39m</code></pre><pre><code class="language-julia hljs">plot(ts, [Ω(sol.params, t) for t in ts], label=&quot;Ω/2π&quot;)
+plot!(ts, [Δ(sol.params, t) for t in ts], label=&quot;Δ/2π&quot;)
+ylabel!(&quot;Waveform (MHz)&quot;)
+plot!(Plots.twinx(), ts, [φ(sol.params, t) for t in ts], ylabel=&quot;ϕ (Radians)&quot;, color=green,
+      yguidefont = font(green), legend=false)
+xlabel!(&quot;Time (µs)&quot;, right_margin = 15Plots.mm)</code></pre><p><img src="CZ2_files/CZ2_10_0.svg" alt="svg"/></p><pre><code class="language-julia hljs">tout, psit22 = schroedinger_dynamic(ts, nlevelstate(bs, 2)⊗nlevelstate(bs, 2), H, sol.params)
+tout, psit21 = schroedinger_dynamic(ts, nlevelstate(bs, 2)⊗nlevelstate(bs, 1), H, sol.params)
+tout, psit12 = schroedinger_dynamic(ts, nlevelstate(bs, 1)⊗nlevelstate(bs, 2), H, sol.params)
+tout, psit11 = schroedinger_dynamic(ts, nlevelstate(bs, 1)⊗nlevelstate(bs, 1), H, sol.params)
+
+plot(tout, [real((nlevelstate(bs, 2)⊗nlevelstate(bs, 2))&#39;*elm) for elm in psit22], label=&quot;|hh⟩&quot;)
+plot!(tout, [real((nlevelstate(bs, 2)⊗nlevelstate(bs, 1))&#39;*elm) for elm in psit21], label=&quot;|hg⟩&quot;)
+plot!(tout, [real((nlevelstate(bs, 1)⊗nlevelstate(bs, 2))&#39;*elm) for elm in psit12], label=&quot;|gh⟩&quot;)
+plot!(tout, [real((nlevelstate(bs, 1)⊗nlevelstate(bs, 1))&#39;*elm) for elm in psit11], label=&quot;|gg⟩&quot;)
+plot!(xlabel=&quot;Time (µs)&quot;, ylabel=&quot;Overlap (⟨ij|ψ⟩)&quot;, legend=:right)</code></pre><p><img src="CZ2_files/CZ2_11_0.svg" alt="svg"/></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="SQRTiSWAP.html">« √iSWAP</a><a class="docs-footer-nextpage" href="GHZState.html">GHZ state »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.24 on <span class="colophon-date" title="Monday 19 June 2023 18:08">Monday 19 June 2023</span>. Using Julia version 1.9.0.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>

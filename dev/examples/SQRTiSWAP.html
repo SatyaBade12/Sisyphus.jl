@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>√iSWAP · Sisyphus.jl</title><script data-outdated-warner src="../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.045/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.13.24/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL=".."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../assets/documenter.js"></script><script src="../siteinfo.js"></script><script src="../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../index.html">Sisyphus.jl</a></span></div><form class="docs-search" action="../search.html"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../index.html">Home</a></li><li><a class="tocitem" href="../installation.html">Installation</a></li><li><a class="tocitem" href="../introduction.html">Introduction</a></li><li><a class="tocitem" href="../gbqoc.html">Gradient-based QOC</a></li><li><a class="tocitem" href="../noisy.html">Open quantum systems</a></li><li><a class="tocitem" href="../tutorial.html">Tutorial</a></li><li><span class="tocitem">Examples</span><ul><li><a class="tocitem" href="DRAG.html">DRAG</a></li><li><a class="tocitem" href="TwoLevelSystem.html">Two-level system</a></li><li><a class="tocitem" href="TwoLevelSystemNoisy.html">Noisy two-level system</a></li><li><a class="tocitem" href="RXpi2.html">Rₓ(π/2)</a></li><li class="is-active"><a class="tocitem" href="SQRTiSWAP.html">√iSWAP</a></li><li><a class="tocitem" href="CZ2.html">CZ</a></li><li><a class="tocitem" href="GHZState.html">GHZ state</a></li><li><a class="tocitem" href="GHZStateCUDANeuralNetwork.html">GHZ state 12 atoms (CUDA)</a></li><li><a class="tocitem" href="GHZStateCUDALinearInterp.html">GHZ state 16 atoms (CUDA)</a></li></ul></li><li><a class="tocitem" href="../api.html">API</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Examples</a></li><li class="is-active"><a href="SQRTiSWAP.html">√iSWAP</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href="SQRTiSWAP.html">√iSWAP</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/SatyaBade12/Sisyphus.jl/blob/main/docs/src/examples/SQRTiSWAP.md" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="\\sqrt{i\\text{SWAP}}-gate-in-superconducting-qubits"><a class="docs-heading-anchor" href="#\\sqrt{i\\text{SWAP}}-gate-in-superconducting-qubits"><span>$\sqrt{i\text{SWAP}}$</span> gate in superconducting qubits</a><a id="\\sqrt{i\\text{SWAP}}-gate-in-superconducting-qubits-1"></a><a class="docs-heading-anchor-permalink" href="#\\sqrt{i\\text{SWAP}}-gate-in-superconducting-qubits" title="Permalink"></a></h1><p>In this notebook, we design optimal pulses to realize a high fidelity <span>$16ns$</span> <span>$\sqrt{i\text{SWAP}}$</span> gate, we minimize the leakage out of computational space. We model a system of two flux tunable transmons with the following Hamiltonian,</p><p class="math-container">\[H = \left[\omega_1 + f_1(t)\right] a_1^{\dagger} a_1 + \frac{\eta_1}{12} \left[a_1^{\dagger} + a_1\right]^4 + \left[\omega_2 + f_2(t)\right] a_2^{\dagger} a_2 + \frac{\eta_2}{12} \left[a_2^{\dagger} + a_2\right]^4 + g(t) (a_1 - a_1^{\dagger}) (a_2 - a_2^{\dagger})  \]</p><pre><code class="language-julia hljs">using Sisyphus
+using QuantumOptics
+using LinearAlgebra
+using Flux, DiffEqFlux
+using Plots
+using OrdinaryDiffEq: DP5, Tsit5, Vern7, Vern9, BS3
+using Random
+using ProgressMeter
+ProgressMeter.ijulia_behavior(:clear)</code></pre><pre><code class="language-julia hljs">ω₁ = 2π*5.0
+η₁ = -2π*300.0*1e-3
+ω₁ += η₁
+
+ω₂ = 2π*5.0
+
+η₂ = -2π*300.0*1e-3
+ω₂ += η₂
+
+ωlo1 = ω₂
+ωlo2 = ω₁</code></pre><p>here we consider the first 6 levels of each transmon</p><pre><code class="language-julia hljs">n_levels = 6
+bs = FockBasis(n_levels-1)
+id = identityoperator(bs)
+
+a1 = destroy(bs)⊗id
+a1d = create(bs)⊗id
+a2 = id⊗destroy(bs)
+a2d = id⊗create(bs)
+id12 = id⊗id</code></pre><pre><code class="language-julia hljs">H0 = (η₁/12.0)*(a1 + a1d)^4 + (η₂/12.0)*(a2 + a2d)^4 ## anharmonic part
+H1 = (a2 - a2d)*(a1 - a1d) ## capacitive coupling
+H2 = a1d*a1 + 0.5*id12
+H3 = a2d*a2 + 0.5*id12
+t0, t1 = 0.0, 16.0</code></pre><pre><code class="language-julia hljs">Random.seed!(3)
+n_neurons = 8
+ann = FastChain(FastDense(1, n_neurons, tanh), 
+                FastDense(n_neurons, n_neurons, tanh), 
+                FastDense(n_neurons, n_neurons, tanh), 
+                FastDense(n_neurons, 3))
+θ = Vector{Float64}(initial_params(ann))     
+n_params = length(θ)</code></pre><pre><code class="nohighlight hljs">187</code></pre><p>we first pretrain the neural networks to produce gaussian pulses</p><pre><code class="language-julia hljs">g_guess(t) = @. 0.01*2π*exp(-(t-0.5*t1)^2/(0.2*t1)^2)
+f1_guess(t) = @. 0.1*2π*exp(-(t-0.5*t1)^2/(0.2*t1)^2)
+f2_guess(t) = @. 0.1*2π*exp(-(t-0.5*t1)^2/(0.2*t1)^2)
+
+tsf32 = Float32(t0):0.1f0:Float32(t1)
+gs = Vector{Float32}(g_guess(tsf32))
+f1s = Vector{Float32}(f1_guess(tsf32))
+f2s = Vector{Float32}(f2_guess(tsf32))
+
+ts = Vector{Float64}(tsf32)
+function loss(p)
+    c = 0.0f0
+    for (i,t) in enumerate(tsf32)
+        x = ann([t], p)
+        c += (x[1] - gs[i])^2
+        c += (x[2] - f1s[i])^2
+        c += (x[3] - f2s[i])^2
+    end
+   # println(c)
+    c
+end
+
+res = DiffEqFlux.sciml_train(loss, initial_params(ann), ADAM(0.1f0), maxiters = 500)
+θ = Vector{Float64}(res.u)</code></pre><pre><code class="language-julia hljs">coeffs(p, t) = let v=ann([t], p)
+                    [v[1], ω₁ + v[2], ω₂ + v[3]]
+               end 
+
+H = Hamiltonian(H0, [H1, H2, H3], coeffs)</code></pre><pre><code class="language-julia hljs">states = [fockstate(bs, 0)⊗fockstate(bs, 0),
+          fockstate(bs, 0)⊗fockstate(bs, 1),
+          fockstate(bs, 1)⊗fockstate(bs, 0),
+          fockstate(bs, 1)⊗fockstate(bs, 1)]
+
+trans = UnitaryTransform(states, [[1 0 0 0];
+                                  [0 1 1.0im 0]/√2;
+                                  [0 1.0im 1 0]/√2;
+                                  [0 0.0 0.0 1.0]])</code></pre><pre><code class="language-julia hljs">bcs(p) = 2.0*sum(ann([t0], p).^2 + ann([t1], p).^2)
+                 
+cost = CostFunction((x,y)-&gt; 1.0-real(x&#39;*y), bcs)</code></pre><pre><code class="language-julia hljs">prob = QOCProblem(H, trans,(t0, t1), cost)</code></pre><p>here we use the gaussian pulses as initial guess and solve the <code>QOCProblem</code></p><pre><code class="language-julia hljs">sol = solve(prob, θ, ADAM(0.01); maxiter=100)</code></pre><pre><code class="nohighlight hljs">[32mProgress: 100%|█████████████████████████████████████████| Time: 0:54:37[39m
+[34m  distance:     0.008841084452384546[39m
+[34m  constraints:  0.0003239125678191379[39m</code></pre><pre><code class="language-julia hljs">plot(sol.distance_trace, label=&quot;distance&quot;)
+plot!(sol.constraints_trace, label=&quot;constraints&quot;)</code></pre><p><img src="SQRTiSWAP_files/SQRTiSWAP_16_0.svg" alt="svg"/></p><p>optimal pulses to tune the flux lines and capacitive coupling</p><pre><code class="language-julia hljs">g(t) = ann([t], sol.params)[1]/2π
+f1(t) = ann([t], sol.params)[2]/2π
+f2(t) = ann([t], sol.params)[3]/2π</code></pre><pre><code class="language-julia hljs">ts = t0:t1/100:t1
+plot(ts, g.(ts), label=&quot;g/2π&quot;)
+plot!(ts, f1.(ts), label=&quot;f₁/2π&quot;)
+plot!(ts, f2.(ts), label=&quot;f₂/2π&quot;)
+xlabel!(&quot;Time (ns)&quot;)
+ylabel!(&quot;Waveforms (GHz)&quot;)</code></pre><p><img src="SQRTiSWAP_files/SQRTiSWAP_19_0.svg" alt="svg"/></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="RXpi2.html">« Rₓ(π/2)</a><a class="docs-footer-nextpage" href="CZ2.html">CZ »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.24 on <span class="colophon-date" title="Monday 19 June 2023 18:08">Monday 19 June 2023</span>. Using Julia version 1.9.0.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
