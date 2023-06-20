@@ -2,7 +2,7 @@ using Test
 using Sisyphus
 using QuantumOpticsBase: IncompatibleBases
 using QuantumOptics
-using Flux: ADAM
+using Flux: Adam
 
 @testset "Transform" begin
     include("test_transforms.jl")
